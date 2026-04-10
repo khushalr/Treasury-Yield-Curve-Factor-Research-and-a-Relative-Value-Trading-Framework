@@ -1,6 +1,6 @@
 # Treasury Yield Curve Factor Research and a Relative-Value Trading Framework
 
-Research project exploring U.S. Treasury yield curve dynamics using rolling principal component analysis (PCA), then testing whether factor-neutral curve dislocations can support a relative-value trading framework.
+This is a research project exploring U.S. Treasury yield curve dynamics using rolling principal component analysis (PCA), then testing whether factor-neutral curve dislocations can support a relative-value trading framework.
 
 This project has two goals:
 
