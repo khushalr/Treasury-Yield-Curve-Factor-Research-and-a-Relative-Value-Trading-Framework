@@ -51,153 +51,44 @@ I use daily yield changes because they are closer to the risk I care about.
 - PCA on levels can become mostly a decomposition of historical rate regimes (high-rate era vs low-rate era), which is not exactly the same as day-to-day hedging risk.
 - PCA on daily changes is more about **how the curve moves** right now.
 
-For this project’s purpose (relative-value dislocations + hedging intuition), daily changes are the more useful object.
+- lagged signals to avoid lookahead bias
+- volatility scaling
+- transaction costs / spread assumptions
+- out-of-sample style evaluation logic
 
----
+## Production-style daily pipeline (paper-safe)
 
-## 5) Rolling PCA and look-ahead bias
+This repo now includes a modular `src/` pipeline that converts the research idea into a daily signal workflow designed for **safe paper-trading experimentation only**.
 
-I fit PCA in a rolling historical window.
+### Strategy summary
 
-Key rule: at date `t`, the model should only use information that was available **before** trade execution at `t`.
+- Use Fed nominal Treasury curve data.
+- Compute daily yield changes.
+- Fit rolling PCA (historical window only, no look-ahead).
+- Build a 5Y–7Y–10Y fly approximately neutral to PC1/PC2.
+- Standardize fly residual into a z-score using only prior-history rolling moments (no same-day leakage).
+- Use mean reversion signal (`position = -z_score`, clipped by risk limits).
+- Convert signal into abstract DV01 exposures before any instrument mapping.
 
-Why this matters:
+### Why this is not directly tradable as-is
 
-- Look-ahead bias means accidentally letting future information leak into the signal.
-- In plain terms: it makes backtests look smarter than they really would have been live.
+The core model operates on synthetic curve points, not executable exchange or OTC instruments. A separate instrument mapping layer is required to translate abstract tenor DV01 targets into tradable proxies/contracts/cash bonds.
 
-This repo includes tests to guard against that.
+### Trading modes
 
----
+- `paper_synthetic`: synthetic exposure only, no IBKR order submission.
+- `etf_proxy`: configurable ETF proxy mapping for paper testing.
+- `futures_proxy`: planned extension (requires contract roll + DV01 mapping).
+- `cash_treasury`: planned extension (requires CUSIP selection + bond analytics).
 
-## 6) The 5Y–7Y–10Y butterfly in this project
 
-What the fly means here:
-
-- 5Y and 10Y are wings.
-- 7Y is the belly.
-- “Long belly” means overweighting the 7Y leg versus wings.
-- “Short belly” means the opposite.
-
-I try to solve fly weights that are neutral (as much as possible) to PC1 and PC2.
-
-Intuition:
-
-- If PC1 and PC2 are hedged out, what remains is less “broad market move” and more “relative shape dislocation.”
-- I interpret that residual as the mispricing signal candidate.
-
-Important: this is a **synthetic research fly**, not automatically a directly tradable package.
-
----
-
-## 7) Signal construction
-
-Signal flow:
-
-1. Compute fly residual value.
-2. Standardize into a z-score.
-3. Use mean-reversion direction in this code: signal is based on `-z`.
-
-Alignment detail I care about:
-
-- The z-score uses prior-history rolling mean/std (`shift(1)` logic), not same-day information.
-
-Trade-direction convention used in this code:
-
-- High positive z-score → short fly.
-- Very negative z-score → long fly.
-- Inside entry threshold → no new trade.
-
-I also cap signal magnitude to prevent runaway sizing.
-
----
-
-## 8) Risk and sizing
-
-Sizing is expressed in abstract DV01 space.
-
-- DV01 = approximate dollar value change for a 1bp move in yield.
-- Here it is used as a risk-normalized exposure unit, not as broker-native quantity.
-
-Risk controls include:
-
-- signal capping,
-- gross/leg DV01 caps,
-- position-change caps,
-- stale/missing data checks,
-- paper-only/live-block checks,
-- order-path safety checks.
-
-This separation is intentional: model risk intent first, instrument execution mapping second.
-
----
-
-## 9) Why this is not directly live-tradable
-
-Honest version:
-
-- Fed data gives clean research tenors, not live tradable bond objects.
-- Real implementation needs instrument mapping (CUSIPs, futures contracts, etc.).
-- A 5Y–7Y–10Y fly is not directly equivalent to a standard Treasury futures fly because there is no clean 7Y futures contract.
-
-For futures implementation, I still need:
-
-- contract selection,
-- roll logic,
-- CTD / conversion-factor-aware risk mapping,
-- proper futures DV01.
-
-For cash-Treasury implementation, I still need:
-
-- CUSIP universe logic,
-- accrued interest handling,
-- liquidity filters,
-- financing/shorting assumptions.
-
----
-
-## 10) Paper-trading architecture (intended flow)
-
-Fed data signal → abstract DV01 target → instrument mapping → IBKR paper market data → proposed order tickets → safety checks → optional paper-only limit orders.
-
-What is true by default:
-
-- dry-run mode is on,
-- live trading is blocked,
-- market orders are not used by default,
-- this is research/learning infrastructure, not a claim of edge.
-
----
-
-## 11) Repository structure (teaching view)
-
-- `src/research/`
-  - Where the model logic lives: yield changes, rolling PCA, fly construction, residual/z-score signal.
-- `src/trading/`
-  - Bridge from model outputs to paper-trading concepts: sizing, mapping, tickets, risk gates, IBKR wrapper.
-- `src/data/`
-  - Fed curve loader and validation checks.
-- `src/reporting/`
-  - Daily report generation (`md/json/csv`) so I can inspect what happened each run.
-- `scripts/`
-  - Entry points I can run directly.
-  - `run_daily_signal.py` is the main non-execution daily workflow.
-  - `run_paper_trade.py` is paper-trading workflow wiring.
-- `tests/`
-  - Guardrails so I do not accidentally reintroduce look-ahead bias or unsafe execution behavior.
-- `docs/SAFETY.md`
-  - Consolidated safety gates and defaults.
-- `fed_data_analysis.ipynb`
-  - Canonical exploratory notebook for this research.
-
----
-
-## 12) How to run
-
-Install dependencies:
+### Environment setup and tests
 
 ```bash
-python -m pip install -r requirements.txt
+python -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements-dev.txt
 ```
 
 Run checks:
@@ -207,71 +98,54 @@ python -m compileall src scripts tests
 pytest -q
 ```
 
-Run daily signal pipeline:
+Notes:
+- `numpy`, `pandas`, and `scikit-learn` are the core runtime requirements.
+- `pytest` is required for the automated test suite.
+- `ib_insync`, `matplotlib`, and `jupyter` are optional extras and are not required for core tests.
+
+### Running the daily signal
 
 ```bash
 python scripts/run_daily_signal.py
 ```
 
-Optional paper workflow:
+This computes signals, sizes positions, proposes orders, runs risk checks, and writes reports (`md/csv/json`) under `reports/`.
+
+### Running paper-trading dry run
 
 ```bash
 python scripts/run_paper_trade.py
+```
+
+To allow paper submission, pass:
+
+```bash
 python scripts/run_paper_trade.py --execute-paper
 ```
 
-IBKR note:
+Even with that flag, order placement remains blocked unless safety flags and risk checks pass.
 
-- IBKR connection requires TWS or IB Gateway paper account running locally.
-- There is currently **no** `scripts/run_ibkr_futures_dry_run.py` in this repo.
+### Connecting to IBKR paper TWS/Gateway
 
----
+Defaults in `src/config.py`:
 
-## 13) Safety notes (read this before touching anything)
+- host: `127.0.0.1`
+- port: `7497` (paper)
+- client ID: configurable (`IBKR_CLIENT_ID`)
 
-This project should never place live trades by default.
+Keep `ALLOW_TRADING=False` and `LIVE_TRADING=False` unless intentionally testing with controls in place.
 
-Safety flags (see `src/config.py`):
+### Safety warnings
 
-- `ALLOW_TRADING`
-  - Master permission flag. If `False`, execution is blocked.
-- `PAPER_TRADING`
-  - Must be `True` for any paper submission path.
-- `LIVE_TRADING`
-  - If `True`, submission is explicitly blocked by safety logic.
-- `DRY_RUN`
-  - If `True`, do not submit orders; only generate proposals.
+- Default behavior is dry-run and paper-only.
+- Live trading is blocked by default.
+- No market orders are generated by default order builder.
+- Risk checks gate the workflow before order sizing/ticketing and again before any submission attempt.
 
-Current defaults are intentionally conservative:
+### Known limitations
 
-- `ALLOW_TRADING=False`
-- `PAPER_TRADING=True`
-- `LIVE_TRADING=False`
-- `DRY_RUN=True`
-
-Also: order tickets default to limit orders (`LMT`), not market orders.
-
----
-
-## 14) What I still need to improve (learning roadmap)
-
-- Check PCA stability through time (do factors stay interpretable?).
-- Compare 5Y–7Y–10Y vs futures-native alternatives like 2Y–5Y–10Y or 5Y–10Y–30Y.
-- Add proper futures DV01 mapping using CTD + conversion factors.
-- Add robust contract roll handling.
-- Add transaction cost and slippage assumptions.
-- Add stronger out-of-sample protocol.
-- Improve reporting/plot diagnostics.
-- Add monitoring for when PCA factors stop behaving like level/slope/curvature.
-
----
-
-## 15) Honesty statement
-
-I do **not** claim this is profitable.
-
-I also do **not** claim this is production-ready live trading infrastructure.
-
-Paper results are not live results.
-
-This repository is for research, learning, and building safer process discipline.
+- Fed curve data is delayed and not intraday executable market data.
+- Synthetic yield relationships differ from tradable securities.
+- Cash Treasury implementation still needs: CUSIP selection, liquidity checks, accrued interest treatment, and shorting/financing assumptions.
+- Futures implementation still needs: contract roll logic and robust DV01 mapping.
+- Backtest and research performance can degrade materially after costs, slippage, and execution constraints.
