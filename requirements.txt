@@ -1,0 +1,4 @@
+# Core runtime dependencies
+numpy
+pandas
+scikit-learn
