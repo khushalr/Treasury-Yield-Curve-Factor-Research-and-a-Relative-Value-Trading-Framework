@@ -1,61 +1,55 @@
 # Treasury Yield Curve Factor Research and a Relative-Value Trading Framework
 
-This is a research project exploring U.S. Treasury yield curve dynamics using rolling principal component analysis (PCA), then testing whether factor-neutral curve dislocations can support a relative-value trading framework.
+## 1) What this project is (plain English)
 
-This project has two goals:
+This is my Treasury yield curve relative-value research project.
 
-1. understand the economic structure of the Treasury curve through level, slope, and curvature factors;
-2. evaluate whether those factor insights can be turned into a realistic trading signal once delays, volatility targeting, and transaction costs are considered.
+The core question is simple: if I model the curve structure with PCA, and then look at a 5Y–7Y–10Y butterfly, do temporary dislocations tend to mean-revert in a way that is useful for a disciplined signal process?
 
-## Why this project matters
+I am using Federal Reserve curve data for research, then turning that into a **paper-safe** daily signal pipeline.
 
-The Treasury yield curve is one of the most important objects in macroeconomics, fixed income, and systematic trading. Instead of treating each maturity as a separate time series, this project studies the curve as a structured object driven by a small number of common factors.
+---
 
-The research asks two linked questions:
+## 2) The intuition I want to remember
 
-- Can rolling PCA recover the classic level / slope / curvature interpretation of the Treasury curve?
-- After removing common factor exposure, do residual relative-value dislocations contain enough signal to support a tradable strategy?
+If I come back to this six months from now, this is the mental model:
 
-## Main findings
+- The Treasury curve is not one number. It is a whole shape across maturities.
+- Different maturities move together a lot, but not perfectly.
+- PCA is my tool for summarizing the main movement patterns in that shape.
+- Usually, I expect:
+  - PC1 ≈ level,
+  - PC2 ≈ slope,
+  - PC3 ≈ curvature,
+  but I should **always check this empirically** rather than assume it.
+- A butterfly trade is trying to isolate relative richness/cheapness in the belly vs wings while hedging broader curve moves.
+- In this project, 7Y is the belly and 5Y/10Y are the wings.
 
-- The Treasury curve is highly low-dimensional: the first few principal components explain the vast majority of daily curve variation.
-- The first three components align closely with the classic economic interpretation of:
-  - **Level**: the whole curve shifts up or down
-  - **Slope**: the front end and long end move differently
-  - **Curvature**: the belly moves differently from the wings
-- A naive relative-value backtest can appear promising.
-- Once more realistic assumptions are added — such as signal delay, volatility targeting, and transaction costs — performance weakens materially.
-- The main conclusion is that **factor structure is strong, but extracting robust trading edge is much harder than a simple in-sample backtest suggests**.
+---
 
-## Project overview
+## 3) What data I use
 
-The workflow is:
+Data source: Federal Reserve nominal yield curve dataset
+https://www.federalreserve.gov/data/nominal-yield-curve.htm
 
-1. Load Treasury curve data across maturities.
-2. Convert the data into a clean panel of yield changes.
-3. Estimate rolling PCA to study how curve factors evolve through time.
-4. Interpret the leading components economically.
-5. Build a relative-value signal from residual curve dislocations.
-6. Backtest both a naive and a more realistic implementation.
-7. Compare performance under progressively stricter assumptions.
+Important context:
 
-## Methods
+- It is daily **smoothed** Treasury curve data.
+- It is great for research because it gives consistent tenors (like 5Y, 7Y, 10Y) over time.
+- It is **not** the same thing as live tradable bond quotes.
+- It is **not** intraday execution data.
 
-### 1. Yield curve factor extraction
-Rolling PCA is applied to changes in Treasury yields across maturities. This allows the project to estimate the dominant modes of curve movement over time rather than assuming a fixed covariance structure for the full sample.
+So this is a research-quality signal input, not a direct execution feed.
 
-### 2. Factor interpretation
-The leading components are interpreted through their loading shapes:
+---
 
-- **PC1**: broad parallel shift of the curve
-- **PC2**: steepening vs flattening
-- **PC3**: curvature or belly-vs-wings movement
+## 4) Why I use yield changes (not levels) for PCA
 
-### 3. Relative-value construction
-Using the factor model, the framework looks for curve segments whose movement is unusually rich or cheap relative to the common factor structure. This motivates a factor-aware relative-value signal.
+I use daily yield changes because they are closer to the risk I care about.
 
-### 4. Backtesting
-The strategy is evaluated under increasingly realistic assumptions, including:
+- Yield levels are persistent and drift through regimes.
+- PCA on levels can become mostly a decomposition of historical rate regimes (high-rate era vs low-rate era), which is not exactly the same as day-to-day hedging risk.
+- PCA on daily changes is more about **how the curve moves** right now.
 
 - lagged signals to avoid lookahead bias
 - volatility scaling
