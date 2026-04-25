@@ -51,8 +51,94 @@ I use daily yield changes because they are closer to the risk I care about.
 - PCA on levels can become mostly a decomposition of historical rate regimes (high-rate era vs low-rate era), which is not exactly the same as day-to-day hedging risk.
 - PCA on daily changes is more about **how the curve moves** right now.
 
-- lagged signals to avoid lookahead bias
-- volatility scaling
+For this project’s purpose (relative-value dislocations + hedging intuition), daily changes are the more useful object.
+
+---
+
+## 5) Rolling PCA and look-ahead bias
+
+I fit PCA in a rolling historical window.
+
+Key rule: at date `t`, the model should only use information that was available **before** trade execution at `t`.
+
+Why this matters:
+
+- Look-ahead bias means accidentally letting future information leak into the signal.
+- In plain terms: it makes backtests look smarter than they really would have been live.
+
+This repo includes tests to guard against that.
+
+---
+
+## 6) The 5Y–7Y–10Y butterfly in this project
+
+What the fly means here:
+
+- 5Y and 10Y are wings.
+- 7Y is the belly.
+- “Long belly” means overweighting the 7Y leg versus wings.
+- “Short belly” means the opposite.
+
+I try to solve fly weights that are neutral (as much as possible) to PC1 and PC2.
+
+Intuition:
+
+- If PC1 and PC2 are hedged out, what remains is less “broad market move” and more “relative shape dislocation.”
+- I interpret that residual as the mispricing signal candidate.
+
+Important: this is a **synthetic research fly**, not automatically a directly tradable package.
+
+---
+
+## 7) Signal construction
+
+Signal flow:
+
+1. Compute fly residual value.
+2. Standardize into a z-score.
+3. Use mean-reversion direction in this code: signal is based on `-z`.
+
+Alignment detail I care about:
+
+- The z-score uses prior-history rolling mean/std (`shift(1)` logic), not same-day information.
+
+Trade-direction convention used in this code:
+
+- High positive z-score → short fly.
+- Very negative z-score → long fly.
+- Inside entry threshold → no new trade.
+
+I also cap signal magnitude to prevent runaway sizing.
+
+---
+
+## 8) Risk and sizing
+
+Sizing is expressed in abstract DV01 space.
+
+- DV01 = approximate dollar value change for a 1bp move in yield.
+- Here it is used as a risk-normalized exposure unit, not as broker-native quantity.
+
+Risk controls include:
+
+- signal capping,
+- gross/leg DV01 caps,
+- position-change caps,
+- stale/missing data checks,
+- paper-only/live-block checks,
+- order-path safety checks.
+
+This separation is intentional: model risk intent first, instrument execution mapping second.
+
+
+---
+
+## 9) Backtesting realism checks I still care about
+
+These are the practical things that can make a nice research signal look worse in reality:
+
+- lagged signals to avoid accidental look-ahead
+- volatility scaling so risk is not regime-dependent by construction
 - transaction costs / spread assumptions
 - out-of-sample style evaluation logic
 
