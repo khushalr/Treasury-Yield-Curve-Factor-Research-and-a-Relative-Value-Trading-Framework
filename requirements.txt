@@ -1,4 +1,7 @@
-# Core runtime dependencies
 numpy
 pandas
 scikit-learn
+matplotlib
+jupyter
+ib_insync
+pytest
