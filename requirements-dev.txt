@@ -1,0 +1,11 @@
+-r requirements.txt
+
+# Test/development dependencies
+pytest
+
+# Optional research/notebook extras (not required for tests)
+matplotlib
+jupyter
+
+# Optional IBKR integration
+ib_insync
