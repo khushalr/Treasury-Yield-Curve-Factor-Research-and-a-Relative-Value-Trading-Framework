@@ -41,6 +41,7 @@ def map_instruments(
         return tickets
 
     if mode == "etf_proxy":
+        raise NotImplementedError("ETF proxy execution requires instrument-level DV01 calibration, share-quantity conversion and duplicate-symbol netting.")
         for tenor, exp in exposures.items():
             symbol = etf_proxy_map.get(tenor, f"ETF_TENOR_{tenor}")
             tickets.append(
