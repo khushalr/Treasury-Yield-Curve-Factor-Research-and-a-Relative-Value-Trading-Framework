@@ -66,7 +66,7 @@ Why this matters:
 - Look-ahead bias means accidentally letting future information leak into the signal.
 - In plain terms: it makes backtests look smarter than they really would have been live.
 
-This repo includes tests to guard against that.
+This repo includes basic historical-alignment tests; an audited execution-price backtest is not yet available.
 
 ---
 
@@ -106,7 +106,7 @@ Trade-direction convention used in this code:
 
 - High positive z-score → short fly.
 - Very negative z-score → long fly.
-- Inside entry threshold → no new trade.
+- Inside entry threshold → signal is explicitly zero (no new trade).
 
 I also cap signal magnitude to prevent runaway sizing.
 
@@ -160,10 +160,12 @@ This repo now includes a modular `src/` pipeline that converts the research idea
 
 The core model operates on synthetic curve points, not executable exchange or OTC instruments. A separate instrument mapping layer is required to translate abstract tenor DV01 targets into tradable proxies/contracts/cash bonds.
 
+**Research integrity caveat:** This model currently standardizes daily changes in a dynamically weighted synthetic fly, not a consistently defined valuation spread. Its abstract DV01 intents do not represent tradable shares or validated P&L. A point-in-time walk-forward backtest with explicit costs and execution timing is necessary before publishing performance claims.
+
 ### Trading modes
 
 - `paper_synthetic`: synthetic exposure only, no IBKR order submission.
-- `etf_proxy`: configurable ETF proxy mapping for paper testing.
+- `etf_proxy`: blocked pending ETF DV01 calibration, share conversion, and duplicate-symbol netting.
 - `futures_proxy`: planned extension (requires contract roll + DV01 mapping).
 - `cash_treasury`: planned extension (requires CUSIP selection + bond analytics).
 
@@ -203,13 +205,13 @@ This computes signals, sizes positions, proposes orders, runs risk checks, and w
 python scripts/run_paper_trade.py
 ```
 
-To allow paper submission, pass:
+To request execution-mode validation (the current runner **does not submit orders**), pass:
 
 ```bash
 python scripts/run_paper_trade.py --execute-paper
 ```
 
-Even with that flag, order placement remains blocked unless safety flags and risk checks pass.
+This runner does not implement order submission. Missing market-spread data fails closed in the risk-check layer.
 
 ### Connecting to IBKR paper TWS/Gateway
 
