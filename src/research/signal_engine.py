@@ -33,10 +33,10 @@ def generate_signals(
     z = (fly_residual - mean) / std.replace(0.0, np.nan)
 
     raw_signal = -z
-    clipped_signal = raw_signal.clip(lower=-signal_cap, upper=signal_cap)
+    clipped_signal = raw_signal.clip(lower=-signal_cap, upper=signal_cap).where(z.abs() >= entry_z, 0.0).fillna(0.0)
 
     direction = np.where(z > entry_z, "short_fly", np.where(z < -entry_z, "long_fly", "flat"))
-    no_trade_reason = np.where(np.abs(z) < entry_z, "|z| below entry threshold", "")
+    no_trade_reason = np.where(z.isna(), "insufficient history or zero volatility", np.where(np.abs(z) < entry_z, "|z| below entry threshold", ""))
 
     out = pd.DataFrame(
         {
