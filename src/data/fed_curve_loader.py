@@ -37,7 +37,14 @@ def load_fed_curve_data(path: Path | str, tenors: list[int]) -> pd.DataFrame:
     csv_path = Path(path)
     header_line = _find_header_line(csv_path)
     raw = pd.read_csv(csv_path, skiprows=header_line, na_values=["NA", ""])
-    raw["Date"] = pd.to_datetime(raw["Date"], format="%Y-%m-%d", errors="raise")
+    # The published tables and CSV variants may use DD-MM-YYYY or ISO.
+    # Detect the entire column, never let pandas guess ambiguous months.
+    dates = raw["Date"].astype(str).str.strip()
+    iso = dates.str.fullmatch(r"\d{4}-\d{2}-\d{2}").all()
+    dmy = dates.str.fullmatch(r"\d{2}-\d{2}-\d{4}").all()
+    if not (iso or dmy):
+        raise ValueError("Mixed or invalid date formats in Fed source.")
+    raw["Date"] = pd.to_datetime(dates, format="%Y-%m-%d" if iso else "%d-%m-%Y", errors="raise")
     if raw["Date"].isna().any():
         raise ValueError("Missing Fed observation dates; refusing to drop rows silently.")
     if raw["Date"].duplicated().any():
