@@ -237,3 +237,21 @@ Keep `ALLOW_TRADING=False` and `LIVE_TRADING=False` unless intentionally testing
 - Cash Treasury implementation still needs: CUSIP selection, liquidity checks, accrued interest treatment, and shorting/financing assumptions.
 - Futures implementation still needs: contract roll logic and robust DV01 mapping.
 - Backtest and research performance can degrade materially after costs, slippage, and execution constraints.
+
+
+## Reproducible synthetic research backtest
+
+Run from the repository root after installing `requirements-dev.txt`:
+
+```bash
+python -m scripts.run_backtest --data feds200628.csv
+python -m pytest -q
+```
+
+Outputs: `reports/backtest/synthetic_backtest_daily.csv` and `reports/backtest/synthetic_backtest_summary.json`. Costs default to **0.25 bp of yield per unit of absolute DV01 traded, one-way**, an illustrative assumption, not a measured bond spread.
+
+The research backtest uses daily Fed smoothed fitted zero-coupon curve yields for 5Y/7Y/10Y. PCA is fitted strictly on past daily yield changes; the belly/wing yield combination is standardized against preceding yield levels with the *same* historical loadings applied consistently across the window. A signal generated using day `t` yield data is **executed hypothetically at t+1's smoothed curve mark** and starts earning P&L thereafter. Position size is normalized to **one dollar per yield-basis-point of gross DV01**, and synthetic P&L is the first-order duration approximation `-sum(DV01_tenor × delta_yield_bp)`. This does not represent a percentage return, portfolio Sharpe ratio, cash-bond backtest, or executable strategy.
+
+The reported `unit_pnl_sharpe_not_roi` measures the annualized mean/stdev of **synthetic unit-DV01 P&L**, not an investable strategy Sharpe. An apparent chronological holdout is **not** truly out of sample if researcher decisions were informed by this history. The data are smoothed and can be revised; dates are model observation dates, not tradable market closes. There is no coupon/carry/roll-down, convexity, CUSIP selection, repo financing, exact price/quote matching, bid/ask spread measurement, taxes or capital budgeting.
+
+Regression tests use explicitly synthetic data, not the actual Fed file. **No validated empirical performance or profitable strategy is claimed.** Do not use this research backtest for execution or advertising investment performance.
