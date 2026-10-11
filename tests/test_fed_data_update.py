@@ -33,3 +33,21 @@ def test_uploader_rejects_wrong_columns():
     bad = b"Date,SVENY05,SVENY07\n2026-01-01,1,2\n"
     with pytest.raises(ValueError, match="Missing columns"):
         inspect_csv(bad)
+
+
+def test_day_first_public_table_dates(tmp_path):
+    data = ("Preface\nDate,SVENY05,SVENY07,SVENY10\n"
+            "31-08-2026,4,4.2,4.4\n"
+            "01-09-2026,4.1,4.3,4.5\n")
+    path = tmp_path / "day_first.csv"
+    path.write_text(data)
+    frame = load_fed_curve_data(path, [5, 7, 10])
+    assert str(frame.index[0].date()) == "2026-08-31"
+    assert str(frame.index[1].date()) == "2026-09-01"
+
+
+def test_mixed_dates_fail_loudly(tmp_path):
+    path = tmp_path / "mixed.csv"
+    path.write_text("Date,SVENY05,SVENY07,SVENY10\n2026-08-31,4,4,4\n01-09-2026,4,4,4\n")
+    with pytest.raises(ValueError, match="Mixed or invalid"):
+        load_fed_curve_data(path, [5, 7, 10])
