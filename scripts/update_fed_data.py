@@ -39,7 +39,8 @@ def inspect_csv(payload: bytes) -> tuple[str, int]:
             continue
         try:
             # Official Fed CSV dates are ISO YYYY-MM-DD, not day-first.
-            dt = datetime.strptime(raw, "%Y-%m-%d").date().isoformat()
+            fmt = "%Y-%m-%d" if len(raw) == 10 and raw[4] == "-" else "%d-%m-%Y"
+            dt = datetime.strptime(raw, fmt).date().isoformat()
         except ValueError as exc:
             raise ValueError(f"Unexpected observation date: {raw!r}") from exc
         if dt in seen:
