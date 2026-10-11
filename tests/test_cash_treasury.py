@@ -71,3 +71,18 @@ def test_fail_without_all_market_quotes():
                     {t: 4. for t in range(1,31)})
     with pytest.raises(ValueError, match="Invalid paper"):
         construct_paper_fly({}, 2, 100)
+
+
+@pytest.mark.parametrize("coupon,ytm,maturity,auction_price", [
+    (5.0, 5.033, date(2031, 9, 30), 99.856),
+    (5.0, 5.085, date(2033, 9, 30), 99.505),
+])
+def test_actual_september_2026_treasury_auction_prices(coupon, ytm, maturity, auction_price):
+    """Independent published 5Y/7Y auction price benchmarks, per $100 par.
+
+    Source: TreasuryDirect September 2026 auction results (2026-09-30 issue).
+    Auction quotes are NOT continuous secondary-market bid/ask quotes.
+    """
+    note = TreasuryNote("AUCTIONREF", date(2026,9,30), maturity, coupon, "auction benchmark")
+    estimated = clean_price_from_ytm(note, date(2026,9,30), ytm)
+    assert estimated == pytest.approx(auction_price, abs=.001)
