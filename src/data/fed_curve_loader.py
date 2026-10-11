@@ -37,7 +37,7 @@ def load_fed_curve_data(path: Path | str, tenors: list[int]) -> pd.DataFrame:
     csv_path = Path(path)
     header_line = _find_header_line(csv_path)
     raw = pd.read_csv(csv_path, skiprows=header_line, na_values=["NA", ""])
-    raw["Date"] = pd.to_datetime(raw["Date"], errors="coerce")
+    raw["Date"] = pd.to_datetime(raw["Date"], format="%d-%m-%Y", errors="coerce")
     raw = raw.dropna(subset=["Date"]).set_index("Date").sort_index()
 
     cols = [f"SVENY{tenor:02d}" for tenor in tenors]
