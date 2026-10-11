@@ -144,7 +144,7 @@ def clean_price_from_ytm(note: TreasuryNote, as_of: date, ytm_percent: float) ->
     base = 1 + ytm_percent / 200
     if base <= 0:
         raise ValueError("Invalid bond-equivalent yield.")
-    dirty = sum(amount * base ** (-2 * (fraction + k)) for k, (_, amount) in enumerate(payments))
+    # Semiannual bond-equivalent yield: the base is already a SIX-MONTH factor.\n    # Multiplying the coupon-period exponent by 2 double-discounts cash flows.\n    dirty = sum(amount * base ** (-(fraction + k)) for k, (_, amount) in enumerate(payments))
     return dirty - accrued
 
 
