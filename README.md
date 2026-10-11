@@ -307,3 +307,20 @@ A pricing audit identified and corrected a material bug in `clean_price_from_ytm
 Benchmark source: U.S. Treasury auction-result announcements, September 2026. Tests: `tests/test_cash_treasury.py`. These are primary-auction pricing sanity checks, **not secondary-market bid/ask validations, strategy returns or evidence of alpha**. Settlement assumptions remain simplified; no verified three-security historical panel or backtest using independently observed clean bond quotes is available.
 
 **Validation blocker:** The execution environment cannot directly download the official Treasury auction catalog or historical CUSIP-level broker bid/ask prices. Until such records are supplied, the project must not report live relative-value gaps or cash-bond investment performance. Verify source coupon/price rows independently before publishing these benchmarks as external evidence.
+
+
+## Historical CUSIP reference-price research dataset
+
+A **new** official-source importer provides per-CUSIP daily FedInvest reference prices:
+
+```bash
+python -m scripts.fetch_fedinvest_prices --start 2025-01-01 --end 2025-03-31
+```
+
+The command downloads pages from the U.S. Treasury Fiscal Data `fip_rates_prices` endpoint, checks note CUSIPs, observation dates, duplicate quotes, and positive buy/sell/EOD fields, then writes `data/fedinvest_reference_prices.csv`. It preserves source URLs and explicitly labels columns as **reference**, not executable price. Keep the data out of `src/research/cash_treasury.read_quotes()`: that method requires genuinely observed and attributable dealer bid/ask clean prices.
+
+The `src/data/fip_prices.py:prepare_reference_panel` helper matches these references to the exact-date Fed curve, an as-of auction CUSIP universe, and derived theoretical bond values (complete 5Y/7Y/10Y sets only). Its output describes **indicative model-versus-government-account reference gaps, not tradable arbitrage or backtest P&L**. Missing dates/CUSIPs fail closed and are listed separately; no price forward filling.
+
+**Critical research caveats:** FedInvest prices support government-account transactions/redemptions and daily valuations; they are not guaranteed dealer executable quotes or consistent closing marks. The Fed fitted Treasury yield series is smoothed and can be revised. Historical CUSIP selection, issue/reopening metadata and timing must be validated separately. Realistic bond strategy P&L requires point-in-time bond pricing, coupon accrual, sale/short borrow and financing, roll conventions and spreads. Historical API acquisition was not completed in the assistant execution environment due to outbound network DNS restrictions, so **no numeric actual historical backtest statistics are verified here**.
+
+Source: [U.S. Treasury Fiscal Data API, FedInvest Rates and Prices](https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/fip_rates_prices).
