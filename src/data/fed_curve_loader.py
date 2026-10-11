@@ -37,8 +37,12 @@ def load_fed_curve_data(path: Path | str, tenors: list[int]) -> pd.DataFrame:
     csv_path = Path(path)
     header_line = _find_header_line(csv_path)
     raw = pd.read_csv(csv_path, skiprows=header_line, na_values=["NA", ""])
-    raw["Date"] = pd.to_datetime(raw["Date"], format="%d-%m-%Y", errors="coerce")
-    raw = raw.dropna(subset=["Date"]).set_index("Date").sort_index()
+    raw["Date"] = pd.to_datetime(raw["Date"], format="%Y-%m-%d", errors="raise")
+    if raw["Date"].isna().any():
+        raise ValueError("Missing Fed observation dates; refusing to drop rows silently.")
+    if raw["Date"].duplicated().any():
+        raise ValueError("Duplicate Fed observation dates.")
+    raw = raw.set_index("Date").sort_index()
 
     cols = [f"SVENY{tenor:02d}" for tenor in tenors]
     missing = [c for c in cols if c not in raw.columns]
@@ -46,6 +50,8 @@ def load_fed_curve_data(path: Path | str, tenors: list[int]) -> pd.DataFrame:
         raise ValueError(f"Missing expected tenor columns: {missing}")
 
     curve = raw[cols].apply(pd.to_numeric, errors="coerce")
+    # The Federal Reserve has historically used -999.99 as missing-data sentinel.
+    curve = curve.mask(curve <= -999.0)
     curve.columns = tenors
     return curve
 
