@@ -29,7 +29,7 @@ def inspect_csv(payload: bytes) -> tuple[str, int]:
     fields = set(reader.fieldnames or [])
     if not REQUIRED.issubset(fields):
         raise ValueError(f"Missing columns: {sorted(REQUIRED - fields)}")
-    from datetime import date
+    from datetime import datetime
     latest = None
     count = 0
     seen = set()
@@ -40,7 +40,7 @@ def inspect_csv(payload: bytes) -> tuple[str, int]:
         try:
             # Fed published values historically use YYYY-MM-DD; adapt carefully
             # if the provider changes their format.
-            dt = date.fromisoformat(raw).isoformat()
+            dt = datetime.strptime(raw, "%d-%m-%Y").date().isoformat()
         except ValueError as exc:
             raise ValueError(f"Unexpected observation date: {raw!r}") from exc
         if dt in seen:
