@@ -266,3 +266,30 @@ Use `python scripts/update_fed_data.py` to download and validate the full `feds2
 GitHub Actions workflow `.github/workflows/refresh-fed-data.yml` refreshes **Wednesdays 17:30 UTC** (or on manual dispatch). When changed, it commits the updated CSV using the GitHub Actions bot. Scheduled workflows run from GitHub's **default branch**, so the automatic refresh begins only after this draft PR is validated and merged. In repository Settings → Actions → General, ensure Actions have read/write `contents` permission. Review weekly diffs for unexpected revisions. The workflow will fail rather than overwrite malformed data.
 
 **Tradeable implementation:** The 5Y/7Y/10Y series are theoretical fixed-maturity yields, not CUSIPs, ETF shares or a 3-leg futures spread. A realistic research-to-trading bridge would select specific 5Y, 7Y and 10Y cash Treasury CUSIPs (preferably appropriately seasoned off-the-run notes), compute actual prices, dollar DV01 and possible convexity/financing effects, hedge level and slope in dollar DV01, then use borrowable bonds, executable bid/ask and financing rates. A model overweighting the 7Y belly and underweighting the wings requires long and short exposures; spot bond positions cannot be assumed accessible at retail. There is no single listed exchange-traded instrument that exactly reproduces this modeled fly. **No live order submission should be enabled based on the current smoothed Fed series.**
+
+ 
+## CUSIP-level cash Treasury *research-only* paper workflow
+
+The model's tenor exposures are NOT direct instruments. The closest approach is three **distinct cash Treasury note CUSIPs** with remaining maturities near 5, 7 and 10 years, respectively. The 7Y candidate may have been issued as a 10-year note originally. No current CUSIPs or dealer quotes are hardcoded or fabricated.
+
+1. Fetch historical auction identifiers/metadata from the U.S. Treasury Fiscal Data API (requires internet):
+
+   `python -m scripts.fetch_treasury_auctions --as-of 2026-10-09`
+
+2. Obtain a *separate*, attributable **same-date** two-sided clean-price quote CSV from a market-data provider or broker with headers:
+
+   `as_of,cusip,bid_clean,ask_clean,source`
+
+   Every quoted price must be per **$100 par**, source-tagged and for the exact valuation date. Do not use invented quotes for a real output. No brokerage quote collection is implemented.
+
+3. With a Fed dataset containing the *same date* and all SVENY01–SVENY30 yields, run:
+
+   `python -m scripts.run_cash_treasury_paper --as-of 2026-10-09 --quotes-file data/verified_cash_quotes.csv --direction 1 --gross-dv01 100`
+
+   Direction `+1` means hypothetical **buy 7Y / sell 5Y and 10Y**; `-1` reverses that. `0` means flat. The CLI requires a manually supplied direction intentionally: translating the rolling synthetic PCA signal into a cash-bond trade is *not yet validated*. The output is a **non-executable research report**, not a broker instruction.
+
+**How it works:** Selects aged notes with remaining maturities near target tenors; projects semiannual coupons; solves an approximate clean-price YTM; computes finite-difference dollar DV01 and model clean values from a linearly interpolated Fed fitted zero curve; builds approximate level and linear-maturity-slope neutral dollar-DV01 weights; converts each target into *rounded hypothetical par amounts*. It reports a descriptive model-minus-market-price difference and an indicative half-spread entry cost. The model gap does not establish profit or arbitrage.
+
+**Still missing for any real trade:** authoritative reference-data validation for reopenings and coupon quirks, proper settlement/accrual and ex-coupon handling, dealer executable bid/ask depth, bond availability and short borrow, repo/financing, key-rate/PC hedge matching, dynamic CUSIP roll, historical point-in-time data vintages, actual cost-aware bond backtesting, and independent review of corporate and operational risks. The code has **no live-trading bridge**.
+
+Local offline tests are synthetic fixtures only, not evidence of actual historical or realizable returns.
