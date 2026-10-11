@@ -1,4 +1,4 @@
-"""Fast offline regression checks for Fed DD-MM-YYYY data integrity."""
+"""Fast offline regression checks for actual Fed ISO YYYY-MM-DD dates."""
 import pytest
 import pandas as pd
 
@@ -12,7 +12,7 @@ def fixture_csv(rows):
 
 
 def test_day_first_dates_are_not_swapped(tmp_path):
-    rows = [f"{i:02d}-02-2026,4.1,4.2,4.3" for i in range(1, 13)]
+    rows = [f"2026-02-{i:02d},4.1,4.2,4.3" for i in range(1, 13)]
     raw = fixture_csv(rows)
     # inspect_csv intentionally requires full historic file (>1000 obs)
     path = tmp_path / "sample.csv"
@@ -24,12 +24,12 @@ def test_day_first_dates_are_not_swapped(tmp_path):
 
 
 def test_uploader_rejects_non_chronological_dates():
-    rows = [f"{i:02d}-02-2026,4.1,4.2,4.3" for i in (2, 1)]
+    rows = [f"2026-02-{i:02d},4.1,4.2,4.3" for i in (2, 1)]
     with pytest.raises(ValueError, match="strictly increasing"):
         inspect_csv(fixture_csv(rows))
 
 
 def test_uploader_rejects_wrong_columns():
-    bad = b"Date,SVENY05,SVENY07\n01-01-2026,1,2\n"
+    bad = b"Date,SVENY05,SVENY07\n2026-01-01,1,2\n"
     with pytest.raises(ValueError, match="Missing columns"):
         inspect_csv(bad)
