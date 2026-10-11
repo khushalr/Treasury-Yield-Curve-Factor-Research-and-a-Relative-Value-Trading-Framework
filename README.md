@@ -293,3 +293,17 @@ The model's tenor exposures are NOT direct instruments. The closest approach is 
 **Still missing for any real trade:** authoritative reference-data validation for reopenings and coupon quirks, proper settlement/accrual and ex-coupon handling, dealer executable bid/ask depth, bond availability and short borrow, repo/financing, key-rate/PC hedge matching, dynamic CUSIP roll, historical point-in-time data vintages, actual cost-aware bond backtesting, and independent review of corporate and operational risks. The code has **no live-trading bridge**.
 
 Local offline tests are synthetic fixtures only, not evidence of actual historical or realizable returns.
+
+
+## Independent auction-price calibration (October 2026 audit)
+
+A pricing audit identified and corrected a material bug in `clean_price_from_ytm`: the semiannual discount factor was incorrectly raised to twice the number of semiannual coupon periods. With `(1 + y/200)^(-periods)` instead, newly issued September 2026 Treasury note benchmarks reproduce reported auction prices to about 0.001 price points per $100 par:
+
+| Term | Issue/maturity | Coupon | Auction YTM | Published auction price | Model clean price |
+|---|---|---:|---:|---:|---:|
+| 5 years | 2026-09-30 / 2031-09-30 | 5.000% | 5.033% | 99.856 | 99.855714 |
+| 7 years | 2026-09-30 / 2033-09-30 | 5.000% | 5.085% | 99.505 | 99.504596 |
+
+Benchmark source: U.S. Treasury auction-result announcements, September 2026. Tests: `tests/test_cash_treasury.py`. These are primary-auction pricing sanity checks, **not secondary-market bid/ask validations, strategy returns or evidence of alpha**. Settlement assumptions remain simplified; no verified three-security historical panel or backtest using independently observed clean bond quotes is available.
+
+**Validation blocker:** The execution environment cannot directly download the official Treasury auction catalog or historical CUSIP-level broker bid/ask prices. Until such records are supplied, the project must not report live relative-value gaps or cash-bond investment performance. Verify source coupon/price rows independently before publishing these benchmarks as external evidence.
