@@ -1,0 +1,39 @@
+name: Refresh Federal Reserve yield curve data
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Fed fitted nominal curve is generally updated weekly.
+    - cron: '30 17 * * 3'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fed-curve-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Refresh official complete dataset with checks
+        run: python scripts/update_fed_data.py --path feds200628.csv
+      - name: Commit only when observations or revisions changed
+        run: |
+          if git diff --quiet -- feds200628.csv; then
+            echo "No data changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- feds200628.csv
+          git commit -m "data: refresh Fed fitted nominal Treasury yields"
+          git push
