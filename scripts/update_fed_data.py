@@ -38,9 +38,8 @@ def inspect_csv(payload: bytes) -> tuple[str, int]:
         if not raw:
             continue
         try:
-            # Fed published values historically use YYYY-MM-DD; adapt carefully
-            # if the provider changes their format.
-            dt = datetime.strptime(raw, "%d-%m-%Y").date().isoformat()
+            # Official Fed CSV dates are ISO YYYY-MM-DD, not day-first.
+            dt = datetime.strptime(raw, "%Y-%m-%d").date().isoformat()
         except ValueError as exc:
             raise ValueError(f"Unexpected observation date: {raw!r}") from exc
         if dt in seen:
