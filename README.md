@@ -255,3 +255,14 @@ The research backtest uses daily Fed smoothed fitted zero-coupon curve yields fo
 The reported `unit_pnl_sharpe_not_roi` measures the annualized mean/stdev of **synthetic unit-DV01 P&L**, not an investable strategy Sharpe. An apparent chronological holdout is **not** truly out of sample if researcher decisions were informed by this history. The data are smoothed and can be revised; dates are model observation dates, not tradable market closes. There is no coupon/carry/roll-down, convexity, CUSIP selection, repo financing, exact price/quote matching, bid/ask spread measurement, taxes or capital budgeting.
 
 Regression tests use explicitly synthetic data, not the actual Fed file. **No validated empirical performance or profitable strategy is claimed.** Do not use this research backtest for execution or advertising investment performance.
+
+
+## Automated data refresh
+
+The Fed fitted nominal yield curve is generally **published weekly**, typically Tuesday (covering through the previous Friday), rather than updated every market day. [Official source](https://www.federalreserve.gov/data/nominal-yield-curve.htm).
+
+Use `python scripts/update_fed_data.py` to download and validate the full `feds200628.csv` source. It checks required 5Y/7Y/10Y columns, parses the Fed's day-month-year observation dates explicitly, rejects duplicate/non-monotonic dates, and refuses a regressing or unexpectedly shrinking download. It atomically replaces the file only after validation. Since Fed staff can revise past values, a changed CSV is not necessarily just appended new observations.
+
+GitHub Actions workflow `.github/workflows/refresh-fed-data.yml` refreshes **Wednesdays 17:30 UTC** (or on manual dispatch). When changed, it commits the updated CSV using the GitHub Actions bot. Scheduled workflows run from GitHub's **default branch**, so the automatic refresh begins only after this draft PR is validated and merged. In repository Settings → Actions → General, ensure Actions have read/write `contents` permission. Review weekly diffs for unexpected revisions. The workflow will fail rather than overwrite malformed data.
+
+**Tradeable implementation:** The 5Y/7Y/10Y series are theoretical fixed-maturity yields, not CUSIPs, ETF shares or a 3-leg futures spread. A realistic research-to-trading bridge would select specific 5Y, 7Y and 10Y cash Treasury CUSIPs (preferably appropriately seasoned off-the-run notes), compute actual prices, dollar DV01 and possible convexity/financing effects, hedge level and slope in dollar DV01, then use borrowable bonds, executable bid/ask and financing rates. A model overweighting the 7Y belly and underweighting the wings requires long and short exposures; spot bond positions cannot be assumed accessible at retail. There is no single listed exchange-traded instrument that exactly reproduces this modeled fly. **No live order submission should be enabled based on the current smoothed Fed series.**
