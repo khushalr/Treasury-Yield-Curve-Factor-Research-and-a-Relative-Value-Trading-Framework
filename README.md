@@ -324,3 +324,18 @@ The `src/data/fip_prices.py:prepare_reference_panel` helper matches these refere
 **Critical research caveats:** FedInvest prices support government-account transactions/redemptions and daily valuations; they are not guaranteed dealer executable quotes or consistent closing marks. The Fed fitted Treasury yield series is smoothed and can be revised. Historical CUSIP selection, issue/reopening metadata and timing must be validated separately. Realistic bond strategy P&L requires point-in-time bond pricing, coupon accrual, sale/short borrow and financing, roll conventions and spreads. Historical API acquisition was not completed in the assistant execution environment due to outbound network DNS restrictions, so **no numeric actual historical backtest statistics are verified here**.
 
 Source: [U.S. Treasury Fiscal Data API, FedInvest Rates and Prices](https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/fip_rates_prices).
+
+
+### Historical import: efficient, CUSIP-filtered workflow (2025 Q1 example)
+
+```bash
+python -m scripts.fetch_treasury_auctions --as-of 2025-03-31
+python -m scripts.fetch_fedinvest_prices --start 2025-01-01 --end 2025-03-31 \
+  --auction-file data/treasury_note_auctions.json
+python -m scripts.build_fedinvest_panel
+python -m pytest -q
+```
+
+The price importer now selects historical maturity-matched 5Y/7Y/10Y CUSIPs from the **auction catalog before requesting prices**. It queries small CUSIP groups rather than the full Treasury universe and refuses incomplete historical selection instead of silently claiming full coverage. If source API pagination/schema differs or security records do not cover historical dates, the command stops with an error rather than inventing a dataset. Dates with incomplete observed reference prices are excluded from matched valuation analysis. All resulting prices are **FedInvest government-account references**, not executable market quotes.
+
+**Run status:** As of October 12, 2026, the current assistant container still cannot reach the Treasury/Federal Reserve/GitHub endpoints by DNS, and the only mounted Fed CSV is a synthetic fixture from prior local tests. An actual historical matched valuation report has therefore NOT been produced or verified here. GitHub Actions test results have not been observed. Do not cite backtest performance on your résumé.
