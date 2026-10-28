@@ -9,6 +9,12 @@
 - Added automated Python CI, deterministic offline test data, data-quality checks and fail-closed execution controls that prevent unverified brokerage orders.
 - Developed research-only CUSIP selection, coupon valuation and bond DV01 analytics, comparing theoretical fitted-curve prices with government-account reference data while explicitly excluding execution and investment-return claims.
 
+## Published historical study (2026 dataset)
+
+The public [historical research report](../research/historical_study/REPORT.md) analyzes 9,189 complete Federal Reserve nominal fitted-curve observations from January 1990 through October 23, 2026. In descriptive, full-sample eight-tenor PCA, the first three components explain 97.9% of daily yield-change variance. Its separate three-tenor synthetic sensitivity experiment is positive before assumed costs but negative with a 0.25 bp/unit-turnover charge. This is a **negative research finding**, not an investable trading record.
+
+Optional resume bullet: *Analyzed 9,189 U.S. Treasury fitted-curve observations using PCA across eight maturities; quantified factor stability across predefined historical periods and documented the sensitivity of a hypothetical 5Y–7Y–10Y butterfly to turnover costs.*
+
 ## What to show in an interview
 
 1. Demonstrate the rolling factor-loading hedge equations and show a 5/7/10 loadings matrix.
