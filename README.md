@@ -35,7 +35,7 @@ python -m pytest -q
 python -m scripts.generate_demo_data
 
 # Walk-forward backtest on clearly SYNTHETIC, deterministic data
-python -m scripts.run_backtest --data data/demo_curve.csv \
+python -m scripts.run_walk_forward --data data/demo_curve.csv \
     --pca-window 60 --signal-window 20 --entry-z 1.0 \
     --cost-bp 0.5 --output reports/demo_backtest
 
@@ -46,6 +46,14 @@ python -m scripts.run_daily_signal --data data/demo_curve.csv \
 ~~~
 
 On Windows PowerShell, enter each command on one line (the backslashes above are Unix shell continuations). Outputs are written into ignored directories under reports/. The generator always uses a fixed seed and marks its data as synthetic.
+
+Two independent research runners are retained: `scripts.run_walk_forward` uses the broader eight-tenor PCA and two-observation lag; `scripts.run_backtest` retains the earlier three-tenor synthetic research experiment with configurable entry/exit logic and a chronological reporting split. Their outputs are not directly comparable.
+
+For the earlier research experiment:
+
+~~~bash
+python -m scripts.run_backtest --data feds200628.csv --pca-window 504 --z-window 126
+~~~
 
 Backtest files:
 - reports/demo_backtest/daily_backtest.csv: time-series signals, target/held DV01, turnover, cost and P&L sensitivity.
@@ -59,7 +67,7 @@ Backtest files:
 A Federal Reserve nominal yield curve CSV is included as feds200628.csv. Its freshness is **not** asserted; check the latest date yourself. Re-run research using:
 
 ~~~bash
-python -m scripts.run_backtest --data feds200628.csv \
+python -m scripts.run_walk_forward --data feds200628.csv \
     --pca-window 504 --signal-window 126 \
     --entry-z 2.5 --cost-bp 0.5 --output reports/fed_historical
 ~~~

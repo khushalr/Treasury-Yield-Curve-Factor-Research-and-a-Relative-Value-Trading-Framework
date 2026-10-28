@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.research.backtest import BacktestConfig, run_synthetic_backtest
+from src.research.backtest import BacktestConfig, run_synthetic_backtest, run_walk_forward_backtest
 
 
 def curve(n=110, seed=7):
@@ -66,8 +66,6 @@ def test_bad_input_fails_before_fitting():
         run_synthetic_backtest(curve().iloc[::-1], settings())
     with pytest.raises(ValueError, match='configuration'):
         run_synthetic_backtest(curve(), settings(cost_yield_bp=-.1))
-from src.research.backtest import run_walk_forward_backtest
-
 TENORS = [1, 2, 3, 5, 7, 10, 20, 30]
 
 

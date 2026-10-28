@@ -11,7 +11,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
- 
+
 from src.research.fly_model import build_fly_series
 from src.research.pca_model import compute_yield_changes, fit_rolling_pca
 from src.research.signal_engine import generate_signals
@@ -31,7 +31,6 @@ class BacktestConfig:
 
 
 @dataclass(slots=True)
-
 class BacktestResult:
     daily: pd.DataFrame
     summary: dict[str, float | int | str | None]
@@ -167,6 +166,10 @@ def run_synthetic_backtest(curve: pd.DataFrame, config: BacktestConfig | None = 
         "holdout_warning": "Chronological reporting only; NOT genuinely out-of-sample if design was informed by this period.",
         **_metrics(eligible),
         **_metrics(holdout, "holdout_"),
+    }
+    return BacktestResult(daily=daily, summary=summary)
+
+
 def run_walk_forward_backtest(
     curve: pd.DataFrame,
     *,

@@ -21,7 +21,7 @@ jobs:
       - run: python -m compileall -q src scripts tests
       - run: python -m pytest -q
       - run: python -m scripts.generate_demo_data
-      - run: python -m scripts.run_backtest --data data/demo_curve.csv --pca-window 60 --signal-window 20 --entry-z 1.0 --output reports/ci-demo
+      - run: python -m scripts.run_walk_forward --data data/demo_curve.csv --pca-window 60 --signal-window 20 --entry-z 1.0 --output reports/ci-demo
       - uses: actions/upload-artifact@v4
         with:
           name: synthetic-backtest-${{ matrix.python-version }}
