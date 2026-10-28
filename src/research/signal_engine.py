@@ -32,11 +32,15 @@ def generate_signals(
     std = hist_residual.rolling(rolling_window, min_periods=rolling_window).std(ddof=0)
     z = (fly_residual - mean) / std.replace(0.0, np.nan)
 
+    if entry_z <= 0 or signal_cap <= 0 or rolling_window < 2:
+        raise ValueError("Positive entry_z/signal_cap and rolling_window >= 2 required.")
     raw_signal = -z
-    clipped_signal = raw_signal.clip(lower=-signal_cap, upper=signal_cap)
+    active = np.isfinite(z) & (np.abs(z) >= entry_z)
+    clipped_signal = raw_signal.clip(lower=-signal_cap, upper=signal_cap).where(active, 0.0)
 
-    direction = np.where(z > entry_z, "short_fly", np.where(z < -entry_z, "long_fly", "flat"))
-    no_trade_reason = np.where(np.abs(z) < entry_z, "|z| below entry threshold", "")
+    direction = np.where(active & (z > 0), "short_fly", np.where(active & (z < 0), "long_fly", "flat"))
+    no_trade_reason = np.where(~np.isfinite(z), "insufficient/invalid history",
+                               np.where(~active, "|z| below entry threshold", ""))
 
     out = pd.DataFrame(
         {
@@ -50,6 +54,7 @@ def generate_signals(
     ).set_index("date")
 
     out = out.join(fly_weights.add_prefix("w_"), how="left")
-    out["target_dv01"] = out["clipped_signal"]
+    # This is a dimensionless signal, not an instrument DV01 or order quantity.
+    out["target_signal"] = out["clipped_signal"]
 
     return SignalFrame(frame=out)
