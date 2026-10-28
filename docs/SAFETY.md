@@ -1,50 +1,14 @@
-# Trading Safety Gates
+# Safety model: research only, no broker submission
 
-This project is intentionally configured to prevent accidental live trading.
+The default mode is synthetic research with no brokerage activity. No configuration switch in the provided runners enables executable order submission.
 
-## Default safety configuration (`src/config.py`)
+- scripts/run_daily_signal.py calculates an as-of research signal and report; it produces **no broker tickets**, even if hypothetical risk checks otherwise pass.
+- scripts/run_paper_trade.py produces a report without connecting to IBKR. Its --execute-paper argument is rejected.
+- src/trading/order_builder.py refuses dry_run=False. Dry-run tickets (if called explicitly) are **illustrative abstract exposures**, not valid share or bond quantities.
+- src/trading/instrument_mapper.py supports nontradable synthetic labels only. ETF mapping is disabled until dollar DV01 is measured per actual instrument and duplicate ticker exposures are aggregated.
+- src/trading/ibkr_client.py has an explicit unconditional no-submission guard. Passing paper flags is not enough to prove a connected account is paper only.
+- LIVE_TRADING is disabled by default; this project does not contain a live-order workflow.
 
-- `ALLOW_TRADING = False`
-- `PAPER_TRADING = True`
-- `LIVE_TRADING = False`
-- `DRY_RUN = True`
+**Do not copy these research DV01 numbers into broker order quantity fields.** ETF shares, futures contracts and cash Treasury face amounts require different analytics and verified market data.
 
-These defaults mean strategy runs produce signals and proposed tickets, but do not submit executable orders.
-
-## Execution gating in IBKR client
-
-`src/trading/ibkr_client.py` blocks order submission unless **all** conditions are true:
-
-1. `dry_run` is `False`
-2. `allow_trading` is `True`
-3. `paper_trading` is `True`
-4. `live_trading` is `False`
-5. risk checks pass
-
-If any condition fails, orders are blocked and a warning is logged.
-
-## Risk checks before order flow
-
-`src/trading/risk_checks.py` enforces checks including:
-
-- data freshness
-- signal date alignment
-- required tenor availability
-- entry threshold
-- gross and leg DV01 caps
-- order size cap
-- paper-only mode and no live mode
-- bid/ask spread guard (when available)
-- daily loss guard
-
-`scripts/run_daily_signal.py` runs risk checks before order-ticket generation and again afterward.
-If pre-risk checks fail, no order tickets are generated.
-
-## Order-type safety
-
-`src/trading/order_builder.py` creates `LMT` order tickets by default (not market orders).
-
-## Optional IBKR dependency
-
-`ib_insync` is optional for research/testing.
-Core signal/research tests do not require an active IBKR connection.
+A future paper integration would need independently testable account-type verification, market/limit prices and spreads, qualified contracts, tick sizes, true instrument DV01, order confirmation, exposure aggregation, financing, kill switches and recorded fills. None are implemented or claimed here.

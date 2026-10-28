@@ -6,10 +6,9 @@ import argparse
 import json
 from pathlib import Path
 
+from src.config import PCA_TENORS
 from src.data.fed_curve_loader import load_fed_curve_data
 from src.research.backtest import run_walk_forward_backtest
-
-PCA_TENORS = [1, 2, 3, 5, 7, 10, 20, 30]
 
 
 def main() -> None:
