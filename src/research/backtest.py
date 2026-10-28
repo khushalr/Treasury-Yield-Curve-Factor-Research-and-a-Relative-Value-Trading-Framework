@@ -20,7 +20,7 @@ from src.trading.position_sizer import size_target_positions
 @dataclass(slots=True)
 class BacktestResult:
     daily: pd.DataFrame
-    summary: dict[str, float | int | str]
+    summary: dict[str, float | int | str | None]
 
 
 def run_walk_forward_backtest(
@@ -89,7 +89,7 @@ def run_walk_forward_backtest(
     running = net_pnl.cumsum()
     drawdown = running - running.cummax().clip(lower=0.0)
     std = float(net_pnl.std(ddof=1))
-    sharpe = float(np.sqrt(252) * net_pnl.mean() / std) if std > 0 and np.isfinite(std) else float("nan")
+    sharpe = float(np.sqrt(252) * net_pnl.mean() / std) if std > 0 and np.isfinite(std) else None
 
     daily = pd.DataFrame({
         "z_score": signals["z_score"],
@@ -103,7 +103,7 @@ def run_walk_forward_backtest(
     for t in tenors:
         daily[f"target_dv01_{t}y"] = target[t]
         daily[f"held_dv01_{t}y"] = held[t]
-    summary: dict[str, float | int | str] = {
+    summary: dict[str, float | int | str | None] = {
         "first_date": str(daily.index.min().date()),
         "last_date": str(daily.index.max().date()),
         "observations": len(daily),
