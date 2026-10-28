@@ -1,0 +1,147 @@
+{
+  "meta": {
+    "csv_sha256": "e43e550f1c4e360512c455096cfe350a5737129a8c51147b8803fe383a114539",
+    "source_rows": 16903,
+    "full_source_latest": "2026-03-27",
+    "analysis_first": "1990-01-02",
+    "analysis_last": "2026-03-27",
+    "complete_8_tenor_rows": 9044,
+    "changes": 9043,
+    "eligible_strategy_rows": 8789,
+    "active_rows": 3894,
+    "entries": 92,
+    "input_curve_tenors_years": [
+      1,
+      2,
+      3,
+      5,
+      7,
+      10,
+      20,
+      30
+    ],
+    "strategy_tenors_years": [
+      5,
+      7,
+      10
+    ],
+    "strategy_pca_window": 252,
+    "strategy_z_window": 126,
+    "entry_z": 2.0,
+    "exit_z": 0.5,
+    "gross_risk_unit": "one hypothetical USD/bp gross DV01",
+    "point_in_time_release_safe": false,
+    "tradable_return_or_pnl": false
+  },
+  "explained_variance": [
+    0.8388318565034127,
+    0.11139407842229829,
+    0.02831062654796639
+  ],
+  "eras": [
+    {
+      "period": "1990\u20131999",
+      "pca_observations": 2482,
+      "pc1_pct": 83.80920381398872,
+      "first3_pct": 97.65568565551342,
+      "strategy_observations": 2228,
+      "active_pct": 36.80430879712747,
+      "entries": 28,
+      "gross_sensitivity": 7.3727408816443125,
+      "net_at_025": -7.046020015732823,
+      "net_at_100": -50.30230270786423
+    },
+    {
+      "period": "2000\u20132007",
+      "pca_observations": 2000,
+      "pc1_pct": 87.66890922590932,
+      "first3_pct": 98.66784027050709,
+      "strategy_observations": 2000,
+      "active_pct": 45.7,
+      "entries": 22,
+      "gross_sensitivity": 2.602322731886853,
+      "net_at_025": -8.55743515060088,
+      "net_at_100": -42.036708798064076
+    },
+    {
+      "period": "2008\u20132009",
+      "pca_observations": 501,
+      "pc1_pct": 85.07856135478067,
+      "first3_pct": 98.58923606147724,
+      "strategy_observations": 501,
+      "active_pct": 45.50898203592814,
+      "entries": 4,
+      "gross_sensitivity": 0.4692526175891911,
+      "net_at_025": -1.5712348774647735,
+      "net_at_100": -7.692697362626669
+    },
+    {
+      "period": "2010\u20132019",
+      "pca_observations": 2501,
+      "pc1_pct": 87.50638168948682,
+      "first3_pct": 98.87084971178854,
+      "strategy_observations": 2501,
+      "active_pct": 43.94242303078769,
+      "entries": 23,
+      "gross_sensitivity": 1.142512461635431,
+      "net_at_025": -10.528148557105872,
+      "net_at_100": -45.54013161332979
+    },
+    {
+      "period": "2020\u20132021",
+      "pca_observations": 502,
+      "pc1_pct": 86.72934497021537,
+      "first3_pct": 98.72859592041311,
+      "strategy_observations": 502,
+      "active_pct": 61.55378486055777,
+      "entries": 5,
+      "gross_sensitivity": -1.3834316364516197,
+      "net_at_025": -4.223510206230555,
+      "net_at_100": -12.74374591556736
+    },
+    {
+      "period": "2022 onward",
+      "pca_observations": 1057,
+      "pc1_pct": 83.66939067774364,
+      "first3_pct": 97.88106320605307,
+      "strategy_observations": 1057,
+      "active_pct": 49.57426679280984,
+      "entries": 10,
+      "gross_sensitivity": -4.3214118228986695,
+      "net_at_025": -9.68436383507181,
+      "net_at_100": -25.773219871591238
+    }
+  ],
+  "costs": [
+    {
+      "assumed_yield_bp_cost": 0.0,
+      "gross_sensitivity": 5.8819852334055,
+      "cost_sensitivity": 0.0,
+      "net_sensitivity": 5.8819852334055
+    },
+    {
+      "assumed_yield_bp_cost": 0.25,
+      "gross_sensitivity": 5.8819852334055,
+      "cost_sensitivity": 47.49269787561222,
+      "net_sensitivity": -41.61071264220671
+    },
+    {
+      "assumed_yield_bp_cost": 0.5,
+      "gross_sensitivity": 5.8819852334055,
+      "cost_sensitivity": 94.98539575122444,
+      "net_sensitivity": -89.10341051781893
+    },
+    {
+      "assumed_yield_bp_cost": 1.0,
+      "gross_sensitivity": 5.8819852334055,
+      "cost_sensitivity": 189.9707915024489,
+      "net_sensitivity": -184.08880626904335
+    },
+    {
+      "assumed_yield_bp_cost": 2.0,
+      "gross_sensitivity": 5.8819852334055,
+      "cost_sensitivity": 379.9415830048978,
+      "net_sensitivity": -374.05959777149224
+    }
+  ]
+}
