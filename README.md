@@ -1,237 +1,109 @@
-# Treasury Yield Curve Factor Research and a Relative-Value Trading Framework
+# Treasury Yield Curve Factors & Relative-Value Research
 
-## 1) What this project is (plain English)
+**Rolling PCA · PC-hedged 5Y/7Y/10Y butterfly · causal mean-reversion signals · cost-aware synthetic backtest · fail-closed safety**
 
-This is my Treasury yield curve relative-value research project.
+A fixed-income quantitative research project that asks: **can unusual movements in the 7-year section of the U.S. Treasury yield curve predict subsequent curve changes, after lagging the signal and charging stylized turnover costs?**
 
-The core question is simple: if I model the curve structure with PCA, and then look at a 5Y–7Y–10Y butterfly, do temporary dislocations tend to mean-revert in a way that is useful for a disciplined signal process?
+This repository contains a reproducible Python research pipeline, not an executable trading strategy or a claim of realized profits. Its inputs are **Federal Reserve smoothed fitted yields**, which are not tradeable bond quotes.
 
-I am using Federal Reserve curve data for research, then turning that into a **paper-safe** daily signal pipeline.
+## What it demonstrates
 
----
+| Area | Implementation |
+| --- | --- |
+| Fixed-income data engineering | Load Federal Reserve nominal fitted-yield CSV, parse metadata, validate dates and maturities |
+| Factor research | PCA on daily yield changes across **1, 2, 3, 5, 7, 10, 20 and 30 years** |
+| Relative value | Construct a **5Y–7Y–10Y** fly with fitted PC1/PC2 factor neutrality |
+| Statistical signals | Rolling, prior-history z-scores, thresholded mean-reversion hypothesis |
+| Hypothetical risk | DV01-weighted exposures, volatility scaling, gross/leg caps |
+| Evaluation | Two-observation execution lag, daily DV01 P&L approximation, configurable turnover costs |
+| Engineering | Deterministic offline demo, unit/regression tests, Python 3.11/3.12 GitHub Actions |
+| Safety | **No broker orders can be submitted**; there is no certified contract, account or price mapping |
 
-## 2) The intuition I want to remember
+## Quick start: reproduce without credentials or network access
 
-If I come back to this six months from now, this is the mental model:
+Requires Python 3.11+ and runs from the repository root.
 
-- The Treasury curve is not one number. It is a whole shape across maturities.
-- Different maturities move together a lot, but not perfectly.
-- PCA is my tool for summarizing the main movement patterns in that shape.
-- Usually, I expect:
-  - PC1 ≈ level,
-  - PC2 ≈ slope,
-  - PC3 ≈ curvature,
-  but I should **always check this empirically** rather than assume it.
-- A butterfly trade is trying to isolate relative richness/cheapness in the belly vs wings while hedging broader curve moves.
-- In this project, 7Y is the belly and 5Y/10Y are the wings.
-
----
-
-## 3) What data I use
-
-Data source: Federal Reserve nominal yield curve dataset
-https://www.federalreserve.gov/data/nominal-yield-curve.htm
-
-Important context:
-
-- It is daily **smoothed** Treasury curve data.
-- It is great for research because it gives consistent tenors (like 5Y, 7Y, 10Y) over time.
-- It is **not** the same thing as live tradable bond quotes.
-- It is **not** intraday execution data.
-
-So this is a research-quality signal input, not a direct execution feed.
-
----
-
-## 4) Why I use yield changes (not levels) for PCA
-
-I use daily yield changes because they are closer to the risk I care about.
-
-- Yield levels are persistent and drift through regimes.
-- PCA on levels can become mostly a decomposition of historical rate regimes (high-rate era vs low-rate era), which is not exactly the same as day-to-day hedging risk.
-- PCA on daily changes is more about **how the curve moves** right now.
-
-For this project’s purpose (relative-value dislocations + hedging intuition), daily changes are the more useful object.
-
----
-
-## 5) Rolling PCA and look-ahead bias
-
-I fit PCA in a rolling historical window.
-
-Key rule: at date `t`, the model should only use information that was available **before** trade execution at `t`.
-
-Why this matters:
-
-- Look-ahead bias means accidentally letting future information leak into the signal.
-- In plain terms: it makes backtests look smarter than they really would have been live.
-
-This repo includes tests to guard against that.
-
----
-
-## 6) The 5Y–7Y–10Y butterfly in this project
-
-What the fly means here:
-
-- 5Y and 10Y are wings.
-- 7Y is the belly.
-- “Long belly” means overweighting the 7Y leg versus wings.
-- “Short belly” means the opposite.
-
-I try to solve fly weights that are neutral (as much as possible) to PC1 and PC2.
-
-Intuition:
-
-- If PC1 and PC2 are hedged out, what remains is less “broad market move” and more “relative shape dislocation.”
-- I interpret that residual as the mispricing signal candidate.
-
-Important: this is a **synthetic research fly**, not automatically a directly tradable package.
-
----
-
-## 7) Signal construction
-
-Signal flow:
-
-1. Compute fly residual value.
-2. Standardize into a z-score.
-3. Use mean-reversion direction in this code: signal is based on `-z`.
-
-Alignment detail I care about:
-
-- The z-score uses prior-history rolling mean/std (`shift(1)` logic), not same-day information.
-
-Trade-direction convention used in this code:
-
-- High positive z-score → short fly.
-- Very negative z-score → long fly.
-- Inside entry threshold → no new trade.
-
-I also cap signal magnitude to prevent runaway sizing.
-
----
-
-## 8) Risk and sizing
-
-Sizing is expressed in abstract DV01 space.
-
-- DV01 = approximate dollar value change for a 1bp move in yield.
-- Here it is used as a risk-normalized exposure unit, not as broker-native quantity.
-
-Risk controls include:
-
-- signal capping,
-- gross/leg DV01 caps,
-- position-change caps,
-- stale/missing data checks,
-- paper-only/live-block checks,
-- order-path safety checks.
-
-This separation is intentional: model risk intent first, instrument execution mapping second.
-
-
----
-
-## 9) Backtesting realism checks I still care about
-
-These are the practical things that can make a nice research signal look worse in reality:
-
-- lagged signals to avoid accidental look-ahead
-- volatility scaling so risk is not regime-dependent by construction
-- transaction costs / spread assumptions
-- out-of-sample style evaluation logic
-
-## Production-style daily pipeline (paper-safe)
-
-This repo now includes a modular `src/` pipeline that converts the research idea into a daily signal workflow designed for **safe paper-trading experimentation only**.
-
-### Strategy summary
-
-- Use Fed nominal Treasury curve data.
-- Compute daily yield changes.
-- Fit rolling PCA (historical window only, no look-ahead).
-- Build a 5Y–7Y–10Y fly approximately neutral to PC1/PC2.
-- Standardize fly residual into a z-score using only prior-history rolling moments (no same-day leakage).
-- Use mean reversion signal (`position = -z_score`, clipped by risk limits).
-- Convert signal into abstract DV01 exposures before any instrument mapping.
-
-### Why this is not directly tradable as-is
-
-The core model operates on synthetic curve points, not executable exchange or OTC instruments. A separate instrument mapping layer is required to translate abstract tenor DV01 targets into tradable proxies/contracts/cash bonds.
-
-### Trading modes
-
-- `paper_synthetic`: synthetic exposure only, no IBKR order submission.
-- `etf_proxy`: configurable ETF proxy mapping for paper testing.
-- `futures_proxy`: planned extension (requires contract roll + DV01 mapping).
-- `cash_treasury`: planned extension (requires CUSIP selection + bond analytics).
-
-
-### Environment setup and tests
-
-```bash
+~~~bash
 python -m venv .venv
+# macOS/Linux:
 source .venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements-dev.txt
-```
+# Windows PowerShell:
+# .venv\Scripts\Activate.ps1
+python -m pip install -r requirements-dev.txt
 
-Run checks:
+python -m pytest -q
+python -m scripts.generate_demo_data
 
-```bash
-python -m compileall src scripts tests
-pytest -q
-```
+# Walk-forward backtest on clearly SYNTHETIC, deterministic data
+python -m scripts.run_backtest --data data/demo_curve.csv \
+    --pca-window 60 --signal-window 20 --entry-z 1.0 \
+    --cost-bp 0.5 --output reports/demo_backtest
 
-Notes:
-- `numpy`, `pandas`, and `scikit-learn` are the core runtime requirements.
-- `pytest` is required for the automated test suite.
-- `ib_insync`, `matplotlib`, and `jupyter` are optional extras and are not required for core tests.
+# Latest signal as of the last synthetic observation (not "today")
+python -m scripts.run_daily_signal --data data/demo_curve.csv \
+    --as-of 2025-12-31 --pca-window 60 --signal-window 20 \
+    --output reports/demo_signal
+~~~
 
-### Running the daily signal
+On Windows PowerShell, enter each command on one line (the backslashes above are Unix shell continuations). Outputs are written into ignored directories under reports/. The generator always uses a fixed seed and marks its data as synthetic.
 
-```bash
-python scripts/run_daily_signal.py
-```
+Backtest files:
+- reports/demo_backtest/daily_backtest.csv: time-series signals, target/held DV01, turnover, cost and P&L sensitivity.
+- reports/demo_backtest/summary.json: time span, active days, hypothetical gross/net P&L, illustrative Sharpe and maximum drawdown.
+- reports/demo_signal/daily_report_YYYYMMDD.{json,csv,md}: signal and explicitly blocked risk gates.
 
-This computes signals, sizes positions, proposes orders, runs risk checks, and writes reports (`md/csv/json`) under `reports/`.
+**No performance statistics are hard-coded into this README.** Run the script on a documented dataset and inspect actual results, including negative results, before quoting any number.
 
-### Running paper-trading dry run
+## Use the included historical Fed dataset
 
-```bash
-python scripts/run_paper_trade.py
-```
+A Federal Reserve nominal yield curve CSV is included as feds200628.csv. Its freshness is **not** asserted; check the latest date yourself. Re-run research using:
 
-To allow paper submission, pass:
+~~~bash
+python -m scripts.run_backtest --data feds200628.csv \
+    --pca-window 504 --signal-window 126 \
+    --entry-z 2.5 --cost-bp 0.5 --output reports/fed_historical
+~~~
 
-```bash
-python scripts/run_paper_trade.py --execute-paper
-```
+The 504-observation window is slower but reduces noise versus a short example window. If you want an as-of daily *research* report from a known historical date, specify --as-of. A default daily run checks whether data are fresh and reports a blocked risk gate when they are not.
 
-Even with that flag, order placement remains blocked unless safety flags and risk checks pass.
+Original data source: [Federal Reserve — Nominal Yield Curve Data](https://www.federalreserve.gov/data/nominal-yield-curve.htm). The fitted points are model-derived nominal Treasury yields; they do not include the observed bid/ask, bond-specific DV01, carry or funding.
 
-### Connecting to IBKR paper TWS/Gateway
+## Methodology at a glance
 
-Defaults in `src/config.py`:
+1. Take first differences of fitted yields (in percentage points) rather than PCA on yield levels. Estimate rolling PCA across eight maturities.
+2. For date t, use **only loadings fitted strictly before t** to solve a three-leg fly with 7Y yield weight +1 and approximately zero exposure to PC1/PC2. Refuse ill-conditioned hedge matrices.
+3. Define the daily yield-fly **shock** as weights times that day's 5Y/7Y/10Y yield changes. Compare the shock with a mean/std built from **prior shocks only**.
+4. Hypothesize reversal after extreme shocks: positive z means short the **yield-fly**; negative z means long the yield-fly. Below the threshold, target exposure is **exactly zero**. This is a *hypothesis*, not proven persistent mispricing.
+5. Convert signal direction into **hypothetical bond-price DV01** (opposite sign to yield exposure); scale all legs uniformly for caps so their relative hedge weights survive.
+6. For diagnostic evaluation, shift hypothetical targets by **two observations** before applying them to further changes in fitted yields. Deduct turnover times a configurable **yield-bp-equivalent cost**. P&L is in illustrative DV01-dollars, **not return on capital**.
 
-- host: `127.0.0.1`
-- port: `7497` (paper)
-- client ID: configurable (`IBKR_CLIENT_ID`)
+For definitions, leakage controls, cost assumptions, and known caveats, read [Methodology](docs/METHODOLOGY.md).
 
-Keep `ALLOW_TRADING=False` and `LIVE_TRADING=False` unless intentionally testing with controls in place.
+## Project layout
 
-### Safety warnings
+~~~text
+src/data/             Fed CSV loading and validation
+src/research/         Rolling PCA, fly construction, signal generation, backtest
+src/trading/          Abstract position sizing and fail-closed execution stubs
+src/reporting/        Markdown, JSON and CSV signal reports
+scripts/              Reproducible CLI runners and synthetic fixture generator
+tests/                Leakage, threshold, sizing, safety and P&L cost tests
+docs/                 Methodology, safety rules, resume/interview notes
+.github/workflows/    Automated test matrix and example reproducibility run
+fed_data_analysis.ipynb    Historical exploratory notebook (legacy research)
+~~~
 
-- Default behavior is dry-run and paper-only.
-- Live trading is blocked by default.
-- No market orders are generated by default order builder.
-- Risk checks gate the workflow before order sizing/ticketing and again before any submission attempt.
+## Interpretation and limitations
 
-### Known limitations
+A shock in **daily fitted yields** need not indicate an attractive trade in cash Treasuries. Real-world implementations would require actual security selection and bond pricing, accrued interest, financing/repo, bid/ask, carry, convexity, roll/down and short availability. The PCA also changes across regimes. Backtest statistics on synthetic exposures can be economically meaningless when those effects are absent.
 
-- Fed curve data is delayed and not intraday executable market data.
-- Synthetic yield relationships differ from tradable securities.
-- Cash Treasury implementation still needs: CUSIP selection, liquidity checks, accrued interest treatment, and shorting/financing assumptions.
-- Futures implementation still needs: contract roll logic and robust DV01 mapping.
-- Backtest and research performance can degrade materially after costs, slippage, and execution constraints.
+**There is no production or live-trading path.** The paper runner is a no-connection dry-run; passing an execution flag raises an error. Even the IBKR client is hard-blocked from submitting orders. See [Safety](docs/SAFETY.md).
+
+### Research questions worth extending
+
+- Do findings persist on held-out calendar regimes, especially inflation and hiking cycles?
+- Does a simple 2×wing minus belly yield butterfly outperform factor-hedged shocks?
+- How sensitive are conclusions to transaction-cost assumptions and execution delay?
+- Can cash bonds or futures be mapped to calibrated dollar DV01 without conflating tenors or tickers?
+
+Resume-safe project wording is in [Resume Notes](docs/RESUME_NOTES.md); only describe demonstrated functionality and measured results.

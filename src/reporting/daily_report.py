@@ -38,7 +38,7 @@ def write_daily_report(
         "z_score": float(signal_row.get("z_score", float("nan"))),
         "trade_direction": str(signal_row.get("trade_direction", "unknown")),
         "fly_weights": {k: float(v) for k, v in signal_row.items() if str(k).startswith("w_") and pd.notna(v)},
-        "target_dv01": float(signal_row.get("target_dv01", 0.0)),
+        "target_signal": float(signal_row.get("target_signal", signal_row.get("target_dv01", 0.0))),
         "proposed_orders": [_serialize_obj(x) for x in proposed_orders],
         "risk_checks": _serialize_obj(risk_result),
         "mode": mode,

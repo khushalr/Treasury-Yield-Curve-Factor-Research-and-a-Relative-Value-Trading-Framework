@@ -2,8 +2,11 @@
 """Run daily signal pipeline in safe non-execution mode."""
 from __future__ import annotations
 
+import argparse
 import logging
 from pathlib import Path
+
+import pandas as pd
 
 from src.config import PipelineConfig
 from src.data.fed_curve_loader import load_fed_curve_data, validate_curve_data
@@ -11,8 +14,6 @@ from src.reporting.daily_report import write_daily_report
 from src.research.fly_model import build_fly_series
 from src.research.pca_model import compute_yield_changes, fit_rolling_pca
 from src.research.signal_engine import generate_signals
-from src.trading.instrument_mapper import map_instruments
-from src.trading.order_builder import build_order_tickets
 from src.trading.position_sizer import size_target_positions
 from src.trading.risk_checks import run_risk_checks
 
@@ -21,11 +22,28 @@ LOGGER = logging.getLogger("run_daily_signal")
 
 
 def main() -> None:
-    cfg = PipelineConfig()
-    curve = load_fed_curve_data(cfg.data_path, cfg.selected_tenors)
-    validation = validate_curve_data(curve, cfg.selected_tenors, cfg.stale_data_max_days)
+    parser = argparse.ArgumentParser(description="Daily research signal (no broker orders).")
+    parser.add_argument("--data", type=Path, default=None)
+    parser.add_argument("--output", type=Path, default=None)
+    parser.add_argument("--as-of", type=str, default=None, help="Historical as-of YYYY-MM-DD")
+    parser.add_argument("--pca-window", type=int, default=None)
+    parser.add_argument("--signal-window", type=int, default=None)
+    args = parser.parse_args()
 
-    clean_curve = curve.dropna(subset=cfg.selected_tenors)
+    cfg = PipelineConfig()
+    if args.pca_window is not None:
+        cfg.rolling_pca_window = args.pca_window
+    if args.signal_window is not None:
+        cfg.rolling_signal_window = args.signal_window
+    as_of = pd.Timestamp(args.as_of).normalize() if args.as_of else pd.Timestamp.utcnow().tz_localize(None).normalize()
+    data_path = args.data or cfg.data_path
+    curve = load_fed_curve_data(data_path, cfg.pca_tenors)
+    curve = curve.loc[curve.index <= as_of]
+    validation = validate_curve_data(curve, cfg.pca_tenors, cfg.stale_data_max_days, reference_date=as_of)
+    if validation.errors:
+        LOGGER.warning("Research signal will be generated, but risk gates will fail: %s", validation.errors)
+
+    clean_curve = curve.dropna(subset=cfg.pca_tenors)
     if clean_curve.empty:
         raise RuntimeError("No usable curve rows after dropping missing tenors.")
 
@@ -77,20 +95,11 @@ def main() -> None:
     )
 
     if pre_risk.passed:
-        mapped = map_instruments(sized.target_exposures, cfg.mode, cfg.etf_proxy_map)
-        target_pos = {m.instrument: m.target_exposure for m in mapped}
-        orders = build_order_tickets(
-            target_pos,
-            {},
-            str(latest_date.date()),
-            cfg.min_trade_size,
-            cfg.max_position_change,
-            dry_run=True,
-        )
-    else:
-        mapped = []
+        # No contract price, validated DV01-to-quantity conversion or order intent.
         orders = []
-        LOGGER.warning("Pre-risk checks failed; skipping order-ticket generation.")
+    else:
+        orders = []
+        LOGGER.warning("Risk gate did not pass; report will include no tickets.")
 
     # Pass 2 checks (includes order size limits).
     final_risk = run_risk_checks(
@@ -116,7 +125,7 @@ def main() -> None:
     )
 
     paths = write_daily_report(
-        Path(cfg.reports_dir),
+        args.output or Path(cfg.reports_dir),
         latest_date,
         clean_curve.index[-1],
         latest,

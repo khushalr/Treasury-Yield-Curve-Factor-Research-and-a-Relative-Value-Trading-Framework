@@ -20,13 +20,19 @@ class FlyResult:
 
 
 def _solve_pc_neutral_weights(loadings: pd.DataFrame, tenors: list[int]) -> np.ndarray:
-    tenor_loadings = loadings.loc[tenors, ["PC1", "PC2"]].values
+    if len(tenors) != 3 or len(set(tenors)) != 3:
+        raise ValueError("A butterfly requires three distinct tenors.")
+    tenor_loadings = loadings.loc[tenors, ["PC1", "PC2"]].to_numpy(dtype=float)
     # Enforce middle leg (+1 on 7Y by default) and solve w1,w3 to neutralize PC1/PC2.
     # A * x = b where x=[w5,w10], w7 fixed at 1.
     a = tenor_loadings[[0, 2], :].T
     b = -tenor_loadings[1, :]
-    x, *_ = np.linalg.lstsq(a, b, rcond=None)
+    if not np.isfinite(a).all() or np.linalg.cond(a) > 1e6:
+        raise ValueError("Ill-conditioned PC hedge: cannot construct reliable fly.")
+    x = np.linalg.solve(a, b)
     w = np.array([x[0], 1.0, x[1]], dtype=float)
+    if not np.isfinite(w).all() or np.max(np.abs(w)) > 20:
+        raise ValueError("Unstable PC-neutral fly weights; skipping date.")
     return w
 
 
@@ -65,9 +71,11 @@ def build_fly_series(
             LOGGER.warning("Non-finite PC1/PC2 loadings at %s; skipping fly weight calc.", loading_dt)
             continue
 
-        w = _solve_pc_neutral_weights(load_df, tenors)
-        if np.any(np.abs(w) > 20):
-            LOGGER.warning("Unstable fly weights at %s: %s", loading_dt, w)
+        try:
+            w = _solve_pc_neutral_weights(load_df, tenors)
+        except (ValueError, np.linalg.LinAlgError) as exc:
+            LOGGER.warning("Skipping %s: %s", dt, exc)
+            continue
 
         if "PC3" in load_df.columns and abs(load_df.loc[tenors[1], "PC3"]) < 1e-6:
             LOGGER.warning("PC3 belly loading near zero at %s; curvature interpretation may be weak.", loading_dt)
@@ -79,6 +87,8 @@ def build_fly_series(
         residual_vals.append({"date": dt, "fly_residual": fly_value})
         loading_used_rows.append({"date": dt, "loading_date": loading_dt})
 
+    if not rows:
+        raise ValueError("No stable butterfly observations; inspect PCA input and hedge conditioning.")
     wdf = pd.DataFrame(rows).set_index("date")
     rdf = pd.DataFrame(residual_vals).set_index("date")["fly_residual"]
     ldf = pd.DataFrame(loading_used_rows).set_index("date")["loading_date"]

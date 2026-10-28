@@ -99,9 +99,10 @@ class IBKRClient:
             LOGGER.warning("Not connected to IBKR. No order sent.")
             return None
 
-        LOGGER.warning("PLACING PAPER ORDER NOW. THIS IS NOT LIVE BUT STILL REAL PAPER EXECUTION.")
-        order = LimitOrder(action, quantity, limit_price)
-        return self.ib.placeOrder(contract, order)
+        # Safety-critical: a port or user-set paper flag cannot verify account identity.
+        # Do not submit until the account and contract/quantity/price paths are certified.
+        LOGGER.error("ORDER BLOCKED: broker submission is intentionally not implemented.")
+        return None
 
     def cancel_order(self, trade: Any) -> None:
         if self.ib is not None and trade is not None:

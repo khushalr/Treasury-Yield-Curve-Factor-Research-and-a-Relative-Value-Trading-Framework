@@ -41,18 +41,10 @@ def map_instruments(
         return tickets
 
     if mode == "etf_proxy":
-        for tenor, exp in exposures.items():
-            symbol = etf_proxy_map.get(tenor, f"ETF_TENOR_{tenor}")
-            tickets.append(
-                ProposedInstrumentTrade(
-                    instrument=symbol,
-                    tenor=tenor,
-                    target_exposure=exp,
-                    mode=mode,
-                    metadata={"tradable": "paper_only", "mapping": "proxy"},
-                )
-            )
-        return tickets
+        raise NotImplementedError(
+            "ETF proxy mapping requires dated instrument DV01 estimates and "
+            "portfolio aggregation; multiple tenors can share one ticker."
+        )
 
     if mode == "futures_proxy":
         raise NotImplementedError("futures_proxy is a planned extension; add contract-roll and DV01 mapping first.")
