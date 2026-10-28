@@ -4,7 +4,7 @@
 
 The testable hypothesis is that an unusually large *daily change* in a factor-hedged 5Y/7Y/10Y fitted-yield butterfly is followed by an opposite move. This is *not* a cointegration test of butterfly levels and it does not establish mispricing relative to cash instruments. Daily shock reversion may be a weak or nonexistent effect.
 
-The input is the Fed fitted **nominal** Treasury curve. Yield columns SVENY01, SVENY02, etc. are in percent, so 0.01 percentage points = 1 basis point. The data have a publication delay. Any same-close execution would be optimistic.
+The input is the Fed fitted **nominal** Treasury curve. Yield columns SVENY01, SVENY02, etc. are in percent, so 0.01 percentage points = 1 basis point. **The Fed generally publishes the daily observation series once per week, typically Tuesday through the prior Friday, and historical observations may be revised.** A date-indexed delay of two observations is not a valid proxy for the public release schedule. Results from this code are deliberately retrospective and synthetic, **not point-in-time investable performance**. Source: https://www.federalreserve.gov/data/nominal-yield-curve.htm
 
 ## Factor extraction
 
@@ -26,7 +26,7 @@ The fly's hedge weights change over time. Earlier shocks may therefore use earli
 
 Hypothetical positions are expressed in **dollars of DV01 per bp** (positive DV01 means bond prices benefit when yields fall). The signal sign is inverted when converting yield-fly direction into bond-price DV01. Per-leg DV01 limits scale the entire hedge, not independent legs.
 
-For day t, define held_DV01(t) = target_DV01(t-2). This extra delay acknowledges publication and execution timing; it is still a stylized approximation. The daily sensitivity is:
+For day t, define held_DV01(t) = target_DV01(t-2). This observation lag separates same-row signals and P&L; it **does not correctly model the weekly publication timing**. It is a stylized retrospective diagnostic, not an implementation assumption. The daily sensitivity is:
 
     gross_pnl(t) = -sum_over_legs[held_DV01_i(t) * (dY_i(t) * 100)]
     cost(t) = cost_bp * sum_over_legs[abs(held_DV01_i(t) - held_DV01_i(t-1))]
@@ -40,7 +40,7 @@ The backtest reports net cumulative *DV01-dollars* and an illustrative annualize
 
 - Rolling PCA weights used for today's shock are estimated strictly before today.
 - Rolling z-score reference mean and std are shifted one observation.
-- Position targets are delayed two observations before being applied to changes.
+- Position targets are delayed two *observation rows* before being applied to changes. This is a partial anti-leakage check only; data release timestamps are not reconstructed.
 - Tests perturb an observation at the sample end and assert earlier backtest outputs remain unchanged.
 - Tests assert transaction costs can only reduce simulated net P&L.
 
