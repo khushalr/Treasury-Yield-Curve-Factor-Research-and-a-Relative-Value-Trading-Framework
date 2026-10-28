@@ -1,15 +1,15 @@
 {
   "meta": {
-    "csv_sha256": "e43e550f1c4e360512c455096cfe350a5737129a8c51147b8803fe383a114539",
-    "source_rows": 16903,
-    "full_source_latest": "2026-03-27",
+    "csv_sha256": "88cab90e84ad765ab79d9854b33e5813051210f2ac2285eaa6e720149fdd256d",
+    "source_rows": 17053,
+    "full_source_latest": "2026-10-23",
     "analysis_first": "1990-01-02",
-    "analysis_last": "2026-03-27",
-    "complete_8_tenor_rows": 9044,
-    "changes": 9043,
-    "eligible_strategy_rows": 8789,
-    "active_rows": 3894,
-    "entries": 92,
+    "analysis_last": "2026-10-23",
+    "complete_8_tenor_rows": 9189,
+    "changes": 9188,
+    "eligible_strategy_rows": 8934,
+    "active_rows": 3952,
+    "entries": 94,
     "input_curve_tenors_years": [
       1,
       2,
@@ -34,9 +34,9 @@
     "tradable_return_or_pnl": false
   },
   "explained_variance": [
-    0.8388318565034127,
-    0.11139407842229829,
-    0.02831062654796639
+    0.8390901091723901,
+    0.11132972244958195,
+    0.028156056030884807
   ],
   "eras": [
     {
@@ -101,47 +101,47 @@
     },
     {
       "period": "2022 onward",
-      "pca_observations": 1057,
-      "pc1_pct": 83.66939067774364,
-      "first3_pct": 97.88106320605307,
-      "strategy_observations": 1057,
-      "active_pct": 49.57426679280984,
-      "entries": 10,
-      "gross_sensitivity": -4.3214118228986695,
-      "net_at_025": -9.68436383507181,
-      "net_at_100": -25.773219871591238
+      "pca_observations": 1202,
+      "pc1_pct": 83.81867572858958,
+      "first3_pct": 97.89774495448326,
+      "strategy_observations": 1202,
+      "active_pct": 48.41930116472546,
+      "entries": 12,
+      "gross_sensitivity": -5.462159916851299,
+      "net_at_025": -11.595001420868764,
+      "net_at_100": -29.993525932921166
     }
   ],
   "costs": [
     {
       "assumed_yield_bp_cost": 0.0,
-      "gross_sensitivity": 5.8819852334055,
+      "gross_sensitivity": 4.741237139452866,
       "cost_sensitivity": 0.0,
-      "net_sensitivity": 5.8819852334055
+      "net_sensitivity": 4.741237139452866
     },
     {
       "assumed_yield_bp_cost": 0.25,
-      "gross_sensitivity": 5.8819852334055,
-      "cost_sensitivity": 47.49269787561222,
-      "net_sensitivity": -41.61071264220671
+      "gross_sensitivity": 4.741237139452866,
+      "cost_sensitivity": 48.26258736745654,
+      "net_sensitivity": -43.52135022800367
     },
     {
       "assumed_yield_bp_cost": 0.5,
-      "gross_sensitivity": 5.8819852334055,
-      "cost_sensitivity": 94.98539575122444,
-      "net_sensitivity": -89.10341051781893
+      "gross_sensitivity": 4.741237139452866,
+      "cost_sensitivity": 96.52517473491308,
+      "net_sensitivity": -91.7839375954602
     },
     {
       "assumed_yield_bp_cost": 1.0,
-      "gross_sensitivity": 5.8819852334055,
-      "cost_sensitivity": 189.9707915024489,
-      "net_sensitivity": -184.08880626904335
+      "gross_sensitivity": 4.741237139452866,
+      "cost_sensitivity": 193.05034946982616,
+      "net_sensitivity": -188.3091123303733
     },
     {
       "assumed_yield_bp_cost": 2.0,
-      "gross_sensitivity": 5.8819852334055,
-      "cost_sensitivity": 379.9415830048978,
-      "net_sensitivity": -374.05959777149224
+      "gross_sensitivity": 4.741237139452866,
+      "cost_sensitivity": 386.1006989396523,
+      "net_sensitivity": -381.3594618001994
     }
   ]
 }

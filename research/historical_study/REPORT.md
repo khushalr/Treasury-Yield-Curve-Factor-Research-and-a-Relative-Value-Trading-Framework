@@ -4,15 +4,15 @@
 
 ## Executive summary
 
-- Dataset: 9,044 complete eight-tenor records, from 1990-01-02 to 2026-03-27.
+- Dataset: 9,189 complete eight-tenor records, from 1990-01-02 to 2026-10-23.
 - Full-sample daily-change PCA: PC1 83.9%, PC2 11.1%, PC3 2.8%; combined 97.9% explained variance.
-- Synthetic risk-model eligible dates: 8,789; dates with held exposure: 3,894; entry events: 92.
-- Net modeled sensitivity at 0.25 bp cost per unit turnover: -41.61 USD per assumed $1/bp gross DV01. This is **not actual bond P&L**.
+- Synthetic risk-model eligible dates: 8,934; dates with held exposure: 3,952; entry events: 94.
+- Net modeled sensitivity at 0.25 bp cost per unit turnover: -43.52 USD per assumed $1/bp gross DV01. This is **not actual bond P&L**.
 
 ## Source and fixed methodology
 
 Data are Federal Reserve Gürkaynak–Sack–Wright nominal **fitted zero-coupon yields**, not executable Treasury note prices.
-- Source file: 16,903 observations through 2026-03-27. SHA-256: e43e550f1c4e360512c455096cfe350a5737129a8c51147b8803fe383a114539.
+- Source file: 17,053 observations through 2026-10-23. SHA-256: 88cab90e84ad765ab79d9854b33e5813051210f2ac2285eaa6e720149fdd256d.
 - Fixed sample begins 1990-01-01, dropping observations missing any of 1/2/3/5/7/10/20/30Y fitted points.
 - Descriptive PCA: three components on unscaled eight-maturity **daily yield changes** (percentage points); sign is arbitrary.
 - Synthetic scenario: separate 5Y–7Y–10Y rolling PCA minimum-variance fly constructed from prior daily observations.
@@ -35,7 +35,7 @@ Data are Federal Reserve Gürkaynak–Sack–Wright nominal **fitted zero-coupon
 | 2008–2009 | 501 | 85.1 | 98.6 | 501 | 45.5 | 4 | 0.47 | -1.57 | -7.69 |
 | 2010–2019 | 2,501 | 87.5 | 98.9 | 2,501 | 43.9 | 23 | 1.14 | -10.53 | -45.54 |
 | 2020–2021 | 502 | 86.7 | 98.7 | 502 | 61.6 | 5 | -1.38 | -4.22 | -12.74 |
-| 2022 onward | 1,057 | 83.7 | 97.9 | 1,057 | 49.6 | 10 | -4.32 | -9.68 | -25.77 |
+| 2022 onward | 1,202 | 83.8 | 97.9 | 1,202 | 48.4 | 12 | -5.46 | -11.60 | -29.99 |
 
 Amounts are **synthetic modeled dollars** normalized to $1/bp gross DV01, NOT actual investment dollars, a percentage return, or tradable strategy performance.
 
@@ -45,11 +45,11 @@ Amounts are **synthetic modeled dollars** normalized to $1/bp gross DV01, NOT ac
 
 | Hypothetical cost (bp) | Gross sensitivity | Cost penalty | Net sensitivity |
 |---:|---:|---:|---:|
-| 0.00 | 5.88 | 0.00 | 5.88 |
-| 0.25 | 5.88 | 47.49 | -41.61 |
-| 0.50 | 5.88 | 94.99 | -89.10 |
-| 1.00 | 5.88 | 189.97 | -184.09 |
-| 2.00 | 5.88 | 379.94 | -374.06 |
+| 0.00 | 4.74 | 0.00 | 4.74 |
+| 0.25 | 4.74 | 48.26 | -43.52 |
+| 0.50 | 4.74 | 96.53 | -91.78 |
+| 1.00 | 4.74 | 193.05 | -188.31 |
+| 2.00 | 4.74 | 386.10 | -381.36 |
 
 ![Model sensitivity](figures/04_synthetic_pnl_sensitivity.png)
 
