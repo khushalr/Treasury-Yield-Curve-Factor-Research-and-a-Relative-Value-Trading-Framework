@@ -37,10 +37,19 @@ def load_fed_curve_data(path: Path | str, tenors: list[int]) -> pd.DataFrame:
     csv_path = Path(path)
     header_line = _find_header_line(csv_path)
     raw = pd.read_csv(csv_path, skiprows=header_line, na_values=["NA", ""])
-    raw["Date"] = pd.to_datetime(raw["Date"], errors="coerce")
-    raw = raw.dropna(subset=["Date"]).set_index("Date").sort_index()
-    if raw.index.has_duplicates:
-        raise ValueError("Curve data contains duplicate dates; refuse ambiguous observations.")
+    # The published tables and CSV variants may use DD-MM-YYYY or ISO.
+    # Detect the entire column, never let pandas guess ambiguous months.
+    dates = raw["Date"].astype(str).str.strip()
+    iso = dates.str.fullmatch(r"\d{4}-\d{2}-\d{2}").all()
+    dmy = dates.str.fullmatch(r"\d{2}-\d{2}-\d{4}").all()
+    if not (iso or dmy):
+        raise ValueError("Mixed or invalid date formats in Fed source.")
+    raw["Date"] = pd.to_datetime(dates, format="%Y-%m-%d" if iso else "%d-%m-%Y", errors="raise")
+    if raw["Date"].isna().any():
+        raise ValueError("Missing Fed observation dates; refusing to drop rows silently.")
+    if raw["Date"].duplicated().any():
+        raise ValueError("Duplicate Fed observation dates.")
+    raw = raw.set_index("Date").sort_index()
 
     cols = [f"SVENY{tenor:02d}" for tenor in tenors]
     missing = [c for c in cols if c not in raw.columns]
@@ -48,6 +57,8 @@ def load_fed_curve_data(path: Path | str, tenors: list[int]) -> pd.DataFrame:
         raise ValueError(f"Missing expected tenor columns: {missing}")
 
     curve = raw[cols].apply(pd.to_numeric, errors="coerce")
+    # The Federal Reserve has historically used -999.99 as missing-data sentinel.
+    curve = curve.mask(curve <= -999.0)
     curve.columns = tenors
     return curve
 

@@ -56,8 +56,8 @@ def run_risk_checks(
     _record(checks, "allow_trading", allow_trading, "ALLOW_TRADING must be true for execution.")
     _record(checks, "paper_only", paper_trading and not live_trading, "Execution must remain paper-only.")
 
-    spread_ok = True if bid_ask_bps is None else bid_ask_bps <= max_bid_ask_bps
-    _record(checks, "bid_ask", spread_ok, "Bid/ask spread check when market data is available.")
+    spread_ok = bid_ask_bps is not None and 0 <= bid_ask_bps <= max_bid_ask_bps
+    _record(checks, "bid_ask", spread_ok, "Missing bid/ask market data fails closed; measured spread must be within cap.")
     _record(checks, "daily_loss", daily_loss <= max_daily_loss, "Daily loss limit check.")
 
     passed = all(bool(c["passed"]) for c in checks)

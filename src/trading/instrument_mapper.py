@@ -42,8 +42,8 @@ def map_instruments(
 
     if mode == "etf_proxy":
         raise NotImplementedError(
-            "ETF proxy mapping requires dated instrument DV01 estimates and "
-            "portfolio aggregation; multiple tenors can share one ticker."
+            "ETF proxy execution requires instrument-level DV01 calibration, "
+            "share-quantity conversion and duplicate-symbol netting."
         )
 
     if mode == "futures_proxy":
