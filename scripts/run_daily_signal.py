@@ -14,7 +14,7 @@ from src.reporting.daily_report import write_daily_report
 from src.research.fly_model import build_fly_series
 from src.research.pca_model import compute_yield_changes, fit_rolling_pca
 from src.research.signal_engine import generate_signals
- from src.trading.position_sizer import size_target_positions
+from src.trading.position_sizer import size_target_positions
 from src.trading.risk_checks import run_risk_checks
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s - %(message)s")
