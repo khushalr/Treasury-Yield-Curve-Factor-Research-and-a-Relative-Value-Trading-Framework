@@ -9,6 +9,8 @@ SIGNAL_CAP = 3.0
 TARGET_DAILY_VOL = 0.01
 ROLLING_PCA_WINDOW = 504
 SELECTED_TENORS = [5, 7, 10]
+# Fit the main curve factors on a maturity cross-section wider than the fly.
+PCA_TENORS = [1, 2, 3, 5, 7, 10, 20, 30]
 
 MODE = "paper_synthetic"
 
@@ -45,6 +47,7 @@ class PipelineConfig:
     rolling_pca_window: int = ROLLING_PCA_WINDOW
     rolling_signal_window: int = ROLLING_SIGNAL_WINDOW
     selected_tenors: list[int] = field(default_factory=lambda: list(SELECTED_TENORS))
+    pca_tenors: list[int] = field(default_factory=lambda: list(PCA_TENORS))
     mode: str = MODE
     allow_trading: bool = ALLOW_TRADING
     paper_trading: bool = PAPER_TRADING

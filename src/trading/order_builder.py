@@ -26,6 +26,10 @@ def build_order_tickets(
 ) -> list[OrderTicket]:
     """Create tickets from diffs between current and target positions."""
 
+    if not dry_run:
+        raise ValueError("Order builder is research-only: no validated prices, contracts, or DV01-to-quantity mapping.")
+    if min_trade_size <= 0 or max_allowed_trade <= 0:
+        raise ValueError("Trade size limits must be positive.")
     tickets: list[OrderTicket] = []
     all_instruments = sorted(set(target_positions) | set(current_positions))
 

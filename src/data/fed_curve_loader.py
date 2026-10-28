@@ -67,6 +67,7 @@ def validate_curve_data(
     curve_df: pd.DataFrame,
     tenors: list[int],
     stale_data_max_days: int = 5,
+    reference_date: pd.Timestamp | None = None,
 ) -> DataValidationResult:
     """Validate data quality checks used by trading risk guardrails."""
 
@@ -81,10 +82,15 @@ def validate_curve_data(
     if missing_tenors:
         errors.append(f"Missing required tenors: {missing_tenors}")
 
+    if not isinstance(curve_df.index, pd.DatetimeIndex) or curve_df.index.has_duplicates:
+        errors.append("Index must contain unique datetime observations.")
+        return DataValidationResult(False, warnings, errors)
+
     if not all(pd.api.types.is_numeric_dtype(curve_df[c]) for c in curve_df.columns):
         errors.append("Non-numeric values detected in curve columns.")
 
-    if curve_df[tenors].isna().any().any():
+    present = [t for t in tenors if t in curve_df.columns]
+    if present and curve_df[present].isna().any().any():
         warnings.append("Missing yield observations detected; rows will be dropped downstream.")
 
     business_days = pd.date_range(curve_df.index.min(), curve_df.index.max(), freq="B")
@@ -93,8 +99,10 @@ def validate_curve_data(
         warnings.append(f"Missing business dates detected: {len(missing_dates)}")
 
     latest_date = curve_df.index.max().date()
-    now_utc = pd.Timestamp.utcnow().date()
-    staleness = (now_utc - latest_date).days
+    as_of = pd.Timestamp(reference_date).date() if reference_date is not None else pd.Timestamp.utcnow().date()
+    staleness = (as_of - latest_date).days
+    if staleness < 0:
+        errors.append(f"Curve ends after reference date {as_of}; check as-of filtering.")
     if staleness > stale_data_max_days:
         errors.append(
             f"Data is stale: latest point is {latest_date} ({staleness} days old)."
