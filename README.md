@@ -6,6 +6,22 @@ A fixed-income quantitative research project that asks: **do unusual movements i
 
 This repository contains a reproducible Python research pipeline, not an executable trading strategy or a claim of realized profits. Its principal inputs are **Federal Reserve smoothed fitted yields**, which are not tradeable bond quotes. **Crucially, these daily-dated observations are generally published weekly and may be revised.** A 2-observation lag prevents some same-date leakage but does **not** make the backtest point-in-time executable or prove data were public when a position is assumed entered. See the [Fed methodology and publication notes](https://www.federalreserve.gov/data/nominal-yield-curve.htm).
 
+
+## Historical factor research report (actual Federal Reserve data)
+
+See [historical study](research/historical_study/REPORT.md) for an auditable analysis of actual fitted nominal Treasury yields, full-sample PCA loadings, explained-variance comparisons across predefined decades, 5Y/7Y/10Y synthetic butterfly sensitivity and transaction-cost stress tests. A [PDF](research/historical_study/REPORT.pdf) and five charts are also included.
+
+**Results on 9,189 complete eight-tenor observations (January 1990–October 23, 2026):** PC1 explains **83.9%** of daily-change variation, and the first three PCs **97.9%**. The synthetic fly shows **+4.74** gross sensitivity in hypothetical USD per $1/bp DV01 exposure, but only **−43.52** net after charging an *assumed* 0.25 bp/unit of turnover. The negative result is retained rather than optimized away. These are **not tradable profits, returns, or a validated strategy**.
+
+Reproduce by running:
+
+~~~bash
+python -m pip install -r requirements-dev.txt matplotlib reportlab
+python -m scripts.generate_historical_study --data feds200628.csv --output research/historical_study
+~~~
+
+**Critical limitation:** Fitted observations are daily dated but generally released weekly and can be revised; the hypothetical simulation does not reconstruct historical publication timestamps or investable returns. All net-sensitivity results are **not realized or executable trading P&L**.
+
 ## What it demonstrates
 
 | Area | Implementation |

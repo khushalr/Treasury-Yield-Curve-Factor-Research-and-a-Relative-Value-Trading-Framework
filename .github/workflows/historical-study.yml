@@ -1,0 +1,48 @@
+name: Generate historical Treasury research report
+
+on:
+  push:
+    branches:
+      - research/historical-study-2026
+    paths:
+      - scripts/generate_historical_study.py
+      - .github/workflows/historical-study.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish-study:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: python -m pip install -r requirements-dev.txt matplotlib reportlab
+      - run: python -m compileall -q scripts/generate_historical_study.py
+      - name: Refresh authoritative fitted curve CSV before the study
+        run: python -m scripts.update_fed_data --path feds200628.csv
+      - name: Generate actual historical study
+        run: python -m scripts.generate_historical_study --data feds200628.csv --output research/historical_study
+      - uses: actions/upload-artifact@v4
+        with:
+          name: historical-treasury-factor-study
+          path: research/historical_study/
+          if-no-files-found: error
+      - name: Commit reproducible report to research branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f research/historical_study/ feds200628.csv
+          if git diff --cached --quiet; then
+            echo "Report unchanged"
+          else
+            git commit -m "research: generate actual Fed historical study [skip research]"
+            git push
+          fi
