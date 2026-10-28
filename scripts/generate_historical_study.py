@@ -241,6 +241,7 @@ def pdf(result: dict, figs: list[Path], target: Path) -> None:
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.units import mm
+    from PIL import Image as PILImage
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Image, Table, TableStyle, KeepTogether
     styles=getSampleStyleSheet()
     styles.add(ParagraphStyle(name="H1Research",parent=styles["Title"],fontSize=18,leading=23,spaceAfter=12))
@@ -259,7 +260,10 @@ def pdf(result: dict, figs: list[Path], target: Path) -> None:
         f"PC1: {n(ev[0]*100,1)}% of daily-change variance; PCs 1–3 jointly: {n(sum(ev)*100,1)}%.")
     add(f"Model observations: {m['eligible_strategy_rows']:,} after warm-up; active modeled dates: {m['active_rows']:,}; entry events: {m['entries']:,}. All sensitivity units are hypothetical dollars per assumed $1/bp gross DV01.")
     def fig(path,caption):
-        im=Image(str(path)); im.drawWidth=170*mm; im.drawHeight=im.imageHeight*im.drawWidth/im.imageWidth
+        with PILImage.open(path) as raster:
+            pixel_width, pixel_height = raster.size
+        page_width = 165 * mm
+        im = Image(str(path), width=page_width, height=page_width*pixel_height/pixel_width)
         S.append(KeepTogether([im,Paragraph(caption,styles["BodyResearch"])]))
     add("Observed fitted yields and factor loadings","SubResearch")
     fig(figs[0],"Figure 1. Model-derived nominal fitted yields, not cash-bond executable quotes.")
