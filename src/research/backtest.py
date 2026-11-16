@@ -1,4 +1,4 @@
-"""Point-in-time, deliberately SYNTHETIC Treasury butterfly research backtest.
+"""Observation-ordered, deliberately SYNTHETIC Treasury butterfly research backtest.
 
 NOT bond/ETF returns: uses duration-linearized yield changes at fixed $1/bp
 GROSS DV01. No coupon/carry, roll-down, financing, convexity, repo, or quotes.
@@ -158,6 +158,9 @@ def run_synthetic_backtest(curve: pd.DataFrame, config: BacktestConfig | None = 
     split = max(1, int(len(eligible) * (1 - cfg.holdout_fraction)))
     holdout = eligible.iloc[split:]
     summary = {
+        "publication_vintages_verified": False,
+        "investable_backtest": False,
+        "availability_warning": "Observation lags do not reconstruct weekly release times or historical revisions.",
         "methodology": "SYNTHETIC $1/bp gross DV01, delayed one observation, no ROI/carry/financing",
         "cost_yield_bp_one_way": cfg.cost_yield_bp,
         "research_start": str(eligible.index[0].date()),
@@ -263,6 +266,9 @@ def run_walk_forward_backtest(
         "max_drawdown_usd": float(drawdown.min()),
         "cost_bp_per_dv01_turnover": float(cost_bp),
         "execution_lag_observations": execution_lag,
+        "publication_vintages_verified": False,
+        "investable_backtest": False,
+        "availability_warning": "Observation lags do not reconstruct weekly release times or historical revisions.",
         "disclaimer": "Synthetic DV01 sensitivity, not realized/quoted instrument P&L.",
     }
     return BacktestResult(daily=daily, summary=summary)
