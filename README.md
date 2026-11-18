@@ -143,3 +143,7 @@ A shock in **daily fitted yields** need not indicate an attractive trade in cash
 - Can cash bonds or futures be mapped to calibrated dollar DV01 without conflating tenors or tickers?
 
 Resume-safe project wording is in [Resume Notes](docs/RESUME_NOTES.md); only describe demonstrated functionality and measured results.
+
+## Availability and rolling stability diagnostics
+
+See [focused audit and implementation](docs/RESEARCH_AUDIT.md). Both backtest summaries now flag unverified publication vintages and non-investable results. Generate rolling factor stability figures and window/decade summaries with `python -m scripts.report_factor_stability`; original negative cost findings remain intact. The independent USD/CAD experiment is not yet implemented.
